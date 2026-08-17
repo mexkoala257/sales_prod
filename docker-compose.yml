@@ -1,0 +1,96 @@
+version: "3.9"
+
+# ── Multi-Brand Platform — Docker Compose ─────────────────────────────────
+#
+# Quick start:
+#   cp .env.example .env                              # fill in your secrets
+#   docker compose up -d --build                      # build and start
+#   docker compose --profile tools run --rm migrate   # push DB schema (first run)
+#   docker compose --profile tools run --rm seed      # optional: load demo data
+#
+# Update after a git pull:
+#   docker compose build && docker compose up -d
+#
+# Note: B2B artwork uploads require the Replit runtime (sidecar auth).
+# That feature is disabled in this self-hosted configuration.
+
+services:
+
+  # ── PostgreSQL ────────────────────────────────────────────────────────────
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB:       ${POSTGRES_DB:-platform}
+      POSTGRES_USER:     ${POSTGRES_USER:-platform}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD is required — set it in .env}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER:-platform} -d $${POSTGRES_DB:-platform}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ── API Server ────────────────────────────────────────────────────────────
+  api:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+      target: runtime
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      NODE_ENV:      production
+      PORT:          8080
+      DATABASE_URL:  postgres://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-platform}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required — set it in .env}
+      LOG_LEVEL:     ${LOG_LEVEL:-info}
+    expose:
+      - "8080"
+
+  # ── Web (React SPA + Nginx reverse proxy) ─────────────────────────────────
+  web:
+    build:
+      context: .
+      dockerfile: artifacts/storefront/Dockerfile
+      target: runtime
+    restart: unless-stopped
+    depends_on:
+      - api
+    ports:
+      - "${WEB_PORT:-80}:80"
+
+  # ── DB Migration — run once after deploy or schema changes ─────────────────
+  migrate:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+      target: migrate
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-platform}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: [tools]
+
+  # ── Seed — load demo data (optional, idempotent) ───────────────────────────
+  seed:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+      target: runtime
+    command: ["node", "--enable-source-maps", "dist/seed.mjs"]
+    environment:
+      NODE_ENV:      production
+      DATABASE_URL:  postgres://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-platform}
+      SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required — set it in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: [tools]
+
+volumes:
+  postgres_data:
