@@ -1,0 +1,2 @@
+- [Multi-brand platform architecture](multi-brand-platform.md) — JWT auth (3 roles), Drizzle schema, all routes built; key quirks for future sessions
+- [Vite API proxy setup](vite-proxy.md) — storefront proxies /api to localhost:8080; without this browser calls fail

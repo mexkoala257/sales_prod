@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Multi-Brand Platform"
+description = "A multi-tenant, multi-brand e-commerce platform supporting four portals: Super Admin (platform-wide management), Store Admin (per-store product/order management), B2B Wholesale Client Portal (batch ordering, artwork uploads, custom pricing), and a public B2C Storefront (dynamic multi-brand rendering). Supports 4 brands, COD/Net-30 payment terms, and Shopify API integration with demo/live mode toggle."
+version = "1.0.0"
+id = "artifacts/storefront"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 18539
+
+[services.development]
+run = "pnpm --filter @workspace/storefront run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/storefront", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/storefront/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "18539"
+BASE_PATH = "/"

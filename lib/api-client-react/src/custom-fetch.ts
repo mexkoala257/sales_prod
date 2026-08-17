@@ -358,6 +358,18 @@ export async function customFetch<T = unknown>(
     }
   }
 
+  // Fallback to localStorage auth token
+  if (!headers.has("authorization")) {
+    try {
+      const storedToken = localStorage.getItem("auth_token");
+      if (storedToken) {
+        headers.set("authorization", `Bearer ${storedToken}`);
+      }
+    } catch (e) {
+      // ignore localStorage error
+    }
+  }
+
   const requestInfo = { method, url: resolveUrl(input) };
 
   const response = await fetch(input, { ...init, method, headers });
