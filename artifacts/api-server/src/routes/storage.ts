@@ -2,6 +2,7 @@ import { Readable } from "stream";
 import { Router, type IRouter, type Request, type Response } from "express";
 import { requireAuth } from "../middlewares/auth";
 import { ObjectNotFoundError, ObjectStorageService } from "../lib/objectStorage";
+import { getSetting } from "../lib/settings";
 
 const router: IRouter = Router();
 const objectStorageService = new ObjectStorageService();
@@ -14,6 +15,12 @@ router.post(
   "/storage/uploads/request-url",
   requireAuth,
   async (req: Request, res: Response): Promise<void> => {
+    const enabled = await getSetting("featureArtworkUploads", "true");
+    if (enabled === "false") {
+      res.status(403).json({ error: "Artwork uploads are currently disabled." });
+      return;
+    }
+
     const { name, contentType } = req.body as { name?: string; contentType?: string; size?: number };
     if (!name || !contentType) {
       res.status(400).json({ error: "name and contentType are required" });

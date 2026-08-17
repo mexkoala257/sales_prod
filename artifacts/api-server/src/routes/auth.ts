@@ -13,6 +13,7 @@ import {
   LoginB2BBody,
   ChangeB2BPasswordBody,
 } from "@workspace/api-zod";
+import { getSetting } from "../lib/settings";
 
 const router: IRouter = Router();
 
@@ -85,6 +86,11 @@ router.post("/auth/admin/login", async (req, res): Promise<void> => {
 
 // ── B2B Client Login ───────────────────────────────────────────────
 router.post("/auth/b2b/login", async (req, res): Promise<void> => {
+  const b2bEnabled = await getSetting("featureB2BPortal", "true");
+  if (b2bEnabled === "false") {
+    res.status(403).json({ error: "B2B Portal is currently disabled." });
+    return;
+  }
   const parsed = LoginB2BBody.safeParse(req.body);
   if (!parsed.success) {
     res.status(400).json({ error: parsed.error.message });
@@ -128,6 +134,11 @@ router.post("/auth/b2b/login", async (req, res): Promise<void> => {
 
 // ── B2B Change Password ────────────────────────────────────────────
 router.post("/auth/b2b/change-password", async (req, res): Promise<void> => {
+  const b2bEnabled = await getSetting("featureB2BPortal", "true");
+  if (b2bEnabled === "false") {
+    res.status(403).json({ error: "B2B Portal is currently disabled." });
+    return;
+  }
   const authHeader = req.headers.authorization;
   if (!authHeader?.startsWith("Bearer ")) {
     res.status(401).json({ error: "Authentication required" });

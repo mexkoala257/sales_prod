@@ -1,11 +1,25 @@
 import { useGetStorefrontConfig, useListStorefrontProducts } from '@workspace/api-client-react';
 import { useParams, Link } from 'wouter';
 import { ShoppingCart } from 'lucide-react';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
+
+function useStorefrontEnabled() {
+  const [enabled, setEnabled] = useState<boolean | null>(null);
+  useEffect(() => {
+    fetch('/api/feature-flags')
+      .then((r) => r.json())
+      .then((flags: { featureB2CStorefront: boolean }) => setEnabled(flags?.featureB2CStorefront !== false))
+      .catch(() => setEnabled(true)); // fail open so a network error doesn't blank the store
+  }, []);
+  return enabled;
+}
 
 export function StorefrontLayout({ children }: { children: React.ReactNode }) {
   const { storeSlug } = useParams();
-  const { data: config, isLoading } = useGetStorefrontConfig(storeSlug || '', { query: { enabled: !!storeSlug } });
+  const storefrontEnabled = useStorefrontEnabled();
+  const { data: config, isLoading } = useGetStorefrontConfig(storeSlug || '', {
+    query: { enabled: !!storeSlug && storefrontEnabled !== false },
+  });
 
   // Inject dynamic variables into the DOM
   useEffect(() => {
@@ -28,7 +42,23 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
     };
   }, [config]);
 
-  if (isLoading) return <div className="min-h-screen flex items-center justify-center">Loading Storefront...</div>;
+  if (storefrontEnabled === null || isLoading) return <div className="min-h-screen flex items-center justify-center">Loading Storefront...</div>;
+  if (storefrontEnabled === false) {
+    return (
+      <div className="min-h-screen bg-zinc-50 flex items-center justify-center p-6">
+        <div className="text-center space-y-4 max-w-sm">
+          <div className="w-14 h-14 bg-zinc-900 text-white mx-auto flex items-center justify-center font-bold text-xl tracking-tighter">
+            SC
+          </div>
+          <h1 className="text-2xl font-serif tracking-tight">Coming Soon</h1>
+          <p className="text-zinc-500 text-sm">This storefront is not currently available. Please check back later.</p>
+          <Link href="/" className="text-xs font-mono uppercase tracking-widest text-zinc-400 hover:text-zinc-900 underline underline-offset-4">
+            Back to storefronts
+          </Link>
+        </div>
+      </div>
+    );
+  }
   if (!config) return <div className="min-h-screen flex items-center justify-center">Store not found.</div>;
 
   return (

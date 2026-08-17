@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import {
   b2bClientsTable,
@@ -15,8 +15,21 @@ import { eq, and, inArray } from "drizzle-orm";
 import { requireB2BClient } from "../middlewares/auth";
 import type { JwtPayload } from "../middlewares/auth";
 import { CreateB2BOrderBody } from "@workspace/api-zod";
+import { getSetting } from "../lib/settings";
 
 const router: IRouter = Router();
+
+// ── Feature flag guard ────────────────────────────────────────────
+async function requireB2BFeature(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  const enabled = await getSetting("featureB2BPortal", "true");
+  if (enabled === "false") {
+    res.status(403).json({ error: "B2B Portal is currently disabled." });
+    return;
+  }
+  next();
+}
+
+router.use("/b2b", requireB2BFeature);
 
 function getClientId(req: any): number {
   return (req.user as JwtPayload).id;
@@ -115,6 +128,12 @@ router.get("/b2b/artwork", requireB2BClient, async (req, res): Promise<void> => 
 
 // POST /b2b/artwork — register artwork after presigned upload
 router.post("/b2b/artwork", requireB2BClient, async (req, res): Promise<void> => {
+  const artworkEnabled = await getSetting("featureArtworkUploads", "true");
+  if (artworkEnabled === "false") {
+    res.status(403).json({ error: "Artwork uploads are currently disabled." });
+    return;
+  }
+
   const clientId = getClientId(req);
   const { objectPath, name, fileType, fileSizeBytes } = req.body;
 

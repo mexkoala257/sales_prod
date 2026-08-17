@@ -1,4 +1,4 @@
-import { Router, type IRouter } from "express";
+import { Router, type IRouter, type Request, type Response, type NextFunction } from "express";
 import { db } from "@workspace/db";
 import {
   storesTable,
@@ -12,8 +12,22 @@ import {
 } from "@workspace/db";
 import { eq, and, sql } from "drizzle-orm";
 import { CreateB2COrderBody } from "@workspace/api-zod";
+import { getSetting } from "../lib/settings";
 
 const router: IRouter = Router();
+
+// ── Feature flag guard ────────────────────────────────────────────
+// Applied to all per-store endpoints (config, products, categories, orders).
+// The top-level /storefront listing is intentionally left unguarded so
+// the frontend can still render store names with a "Coming Soon" badge.
+async function requireStorefrontFeature(_req: Request, res: Response, next: NextFunction): Promise<void> {
+  const enabled = await getSetting("featureB2CStorefront", "true");
+  if (enabled === "false") {
+    res.status(503).json({ error: "B2C Storefront is currently disabled." });
+    return;
+  }
+  next();
+}
 
 // ── Public store listing ──────────────────────────────────────────
 router.get("/storefront", async (_req, res): Promise<void> => {
@@ -33,8 +47,8 @@ router.get("/storefront", async (_req, res): Promise<void> => {
 });
 
 // ── Store config ──────────────────────────────────────────────────
-router.get("/storefront/:storeSlug/config", async (req, res): Promise<void> => {
-  const { storeSlug } = req.params;
+router.get("/storefront/:storeSlug/config", requireStorefrontFeature, async (req, res): Promise<void> => {
+  const storeSlug = String(req.params.storeSlug);
   const [store] = await db.select().from(storesTable).where(eq(storesTable.slug, storeSlug));
   if (!store || !store.isActive) { res.status(404).json({ error: "Storefront not found" }); return; }
   res.json({
@@ -66,8 +80,8 @@ async function buildPublicProduct(p: any) {
   };
 }
 
-router.get("/storefront/:storeSlug/products", async (req, res): Promise<void> => {
-  const { storeSlug } = req.params;
+router.get("/storefront/:storeSlug/products", requireStorefrontFeature, async (req, res): Promise<void> => {
+  const storeSlug = String(req.params.storeSlug);
   const { categoryId, search } = req.query as { categoryId?: string; search?: string };
 
   const [store] = await db.select().from(storesTable).where(eq(storesTable.slug, storeSlug));
@@ -95,9 +109,9 @@ router.get("/storefront/:storeSlug/products", async (req, res): Promise<void> =>
   res.json(result);
 });
 
-router.get("/storefront/:storeSlug/products/:productId", async (req, res): Promise<void> => {
-  const { storeSlug, productId } = req.params;
-  const id = parseInt(productId as string, 10);
+router.get("/storefront/:storeSlug/products/:productId", requireStorefrontFeature, async (req, res): Promise<void> => {
+  const storeSlug = String(req.params.storeSlug);
+  const id = parseInt(String(req.params.productId), 10);
 
   const [store] = await db.select().from(storesTable).where(eq(storesTable.slug, storeSlug));
   if (!store || !store.isActive) { res.status(404).json({ error: "Storefront not found" }); return; }
@@ -109,8 +123,8 @@ router.get("/storefront/:storeSlug/products/:productId", async (req, res): Promi
 });
 
 // ── Categories ────────────────────────────────────────────────────
-router.get("/storefront/:storeSlug/categories", async (req, res): Promise<void> => {
-  const { storeSlug } = req.params;
+router.get("/storefront/:storeSlug/categories", requireStorefrontFeature, async (req, res): Promise<void> => {
+  const storeSlug = String(req.params.storeSlug);
   const [store] = await db.select().from(storesTable).where(eq(storesTable.slug, storeSlug));
   if (!store || !store.isActive) { res.status(404).json({ error: "Storefront not found" }); return; }
 
@@ -126,8 +140,8 @@ router.get("/storefront/:storeSlug/categories", async (req, res): Promise<void> 
 });
 
 // ── B2C Orders ────────────────────────────────────────────────────
-router.post("/storefront/:storeSlug/orders", async (req, res): Promise<void> => {
-  const { storeSlug } = req.params;
+router.post("/storefront/:storeSlug/orders", requireStorefrontFeature, async (req, res): Promise<void> => {
+  const storeSlug = String(req.params.storeSlug);
   const [store] = await db.select().from(storesTable).where(eq(storesTable.slug, storeSlug));
   if (!store || !store.isActive) { res.status(404).json({ error: "Storefront not found" }); return; }
 

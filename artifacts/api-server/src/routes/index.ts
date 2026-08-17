@@ -6,6 +6,7 @@ import superAdminRouter from "./super-admin";
 import adminRouter from "./admin";
 import b2bRouter from "./b2b";
 import storefrontRouter from "./storefront";
+import featureFlagsRouter from "./feature-flags";
 
 const router: IRouter = Router();
 
@@ -16,5 +17,6 @@ router.use(superAdminRouter);
 router.use(adminRouter);
 router.use(b2bRouter);
 router.use(storefrontRouter);
+router.use(featureFlagsRouter);
 
 export default router;
