@@ -56,6 +56,7 @@ export function SuperAdminLayout({ children }: { children: React.ReactNode }) {
           <SidebarItem href="/super-admin/dashboard" icon={LayoutDashboard} label="Platform Dashboard" />
           <SidebarItem href="/super-admin/stores" icon={Store} label="Storefronts" />
           <SidebarItem href="/super-admin/orders" icon={ShoppingBag} label="Global Orders" />
+          <SidebarItem href="/super-admin/settings" icon={Settings} label="Settings" />
         </nav>
       </div>
       <div className="flex-1 flex flex-col min-w-0">

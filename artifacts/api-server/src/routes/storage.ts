@@ -23,7 +23,7 @@ router.post(
     try {
       const size = req.body.size;
       const uploadURL = await objectStorageService.getObjectEntityUploadURL();
-      const objectPath = objectStorageService.normalizeObjectEntityPath(uploadURL);
+      const objectPath = await objectStorageService.normalizeObjectEntityPath(uploadURL);
 
       res.json({ uploadURL, objectPath, metadata: { name, size, contentType } });
     } catch (error) {

@@ -17,6 +17,7 @@ import {
   CreateStoreAdminBody,
   UpdateOrderStatusSuperAdminBody,
 } from "@workspace/api-zod";
+import { getAllSettings, upsertSettings } from "../lib/settings";
 
 const router: IRouter = Router();
 
@@ -227,6 +228,39 @@ router.patch("/super-admin/orders/:orderId/status", requireSuperAdmin, async (re
   if (!order) { res.status(404).json({ error: "Order not found" }); return; }
 
   res.json({ ...order, total: parseFloat(order.total as string), items: [] });
+});
+
+// ── Platform Settings ──────────────────────────────────────────────
+router.get("/super-admin/settings", requireSuperAdmin, async (_req, res): Promise<void> => {
+  const settings = await getAllSettings();
+  res.json(settings);
+});
+
+router.put("/super-admin/settings", requireSuperAdmin, async (req, res): Promise<void> => {
+  const body = req.body as { settings?: unknown };
+  if (!Array.isArray(body?.settings)) {
+    res.status(400).json({ error: "Body must have a 'settings' array" });
+    return;
+  }
+
+  const inputs = (body.settings as Array<Record<string, unknown>>).map((s) => ({
+    key: String(s.key ?? ""),
+    value: String(s.value ?? ""),
+    isSecret: Boolean(s.isSecret ?? false),
+  })).filter((s) => s.key.length > 0);
+
+  const updated = await upsertSettings(inputs);
+  res.json(updated);
+});
+
+router.post("/super-admin/settings/test-email", requireSuperAdmin, async (_req, res): Promise<void> => {
+  // Real SMTP sending is tracked in Task #8 (install nodemailer and wire credentials).
+  // Until that task is complete this endpoint intentionally returns success:false so the
+  // UI never implies a real message was delivered.
+  res.json({
+    success: false,
+    message: "SMTP test sending is not yet implemented. Configure your SMTP settings and check back after Task #8 is complete.",
+  });
 });
 
 export default router;

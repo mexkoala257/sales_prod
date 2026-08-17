@@ -9,6 +9,7 @@ import {
   ObjectPermission,
   setObjectAclPolicy,
 } from './objectAcl';
+import { getSetting } from './settings';
 
 const REPLIT_SIDECAR_ENDPOINT = 'http://127.0.0.1:1106';
 
@@ -41,8 +42,12 @@ export class ObjectNotFoundError extends Error {
 export class ObjectStorageService {
   constructor() {}
 
-  getPublicObjectSearchPaths(): Array<string> {
-    const pathsStr = process.env.PUBLIC_OBJECT_SEARCH_PATHS || '';
+  /** Reads from platform_settings first; falls back to environment variable. */
+  async getPublicObjectSearchPaths(): Promise<Array<string>> {
+    const pathsStr =
+      (await getSetting('objectStoragePublicPaths')) ||
+      process.env.PUBLIC_OBJECT_SEARCH_PATHS ||
+      '';
     const paths = Array.from(
       new Set(
         pathsStr
@@ -53,26 +58,30 @@ export class ObjectStorageService {
     );
     if (paths.length === 0) {
       throw new Error(
-        "PUBLIC_OBJECT_SEARCH_PATHS not set. Create a bucket in 'Object Storage' " +
-          'tool and set PUBLIC_OBJECT_SEARCH_PATHS env var (comma-separated paths).',
+        "PUBLIC_OBJECT_SEARCH_PATHS not configured. Set it in the Super Admin → Settings page " +
+          "or via the PUBLIC_OBJECT_SEARCH_PATHS environment variable.",
       );
     }
     return paths;
   }
 
-  getPrivateObjectDir(): string {
-    const dir = process.env.PRIVATE_OBJECT_DIR || '';
+  /** Reads from platform_settings first; falls back to environment variable. */
+  async getPrivateObjectDir(): Promise<string> {
+    const dir =
+      (await getSetting('objectStoragePrivateDir')) ||
+      process.env.PRIVATE_OBJECT_DIR ||
+      '';
     if (!dir) {
       throw new Error(
-        "PRIVATE_OBJECT_DIR not set. Create a bucket in 'Object Storage' " +
-          'tool and set PRIVATE_OBJECT_DIR env var.',
+        "PRIVATE_OBJECT_DIR not configured. Set it in the Super Admin → Settings page " +
+          "or via the PRIVATE_OBJECT_DIR environment variable.",
       );
     }
     return dir;
   }
 
   async searchPublicObject(filePath: string): Promise<File | null> {
-    for (const searchPath of this.getPublicObjectSearchPaths()) {
+    for (const searchPath of await this.getPublicObjectSearchPaths()) {
       const fullPath = `${searchPath}/${filePath}`;
 
       const { bucketName, objectName } = parseObjectPath(fullPath);
@@ -112,13 +121,7 @@ export class ObjectStorageService {
   }
 
   async getObjectEntityUploadURL(): Promise<string> {
-    const privateObjectDir = this.getPrivateObjectDir();
-    if (!privateObjectDir) {
-      throw new Error(
-        "PRIVATE_OBJECT_DIR not set. Create a bucket in 'Object Storage' " +
-          'tool and set PRIVATE_OBJECT_DIR env var.',
-      );
-    }
+    const privateObjectDir = await this.getPrivateObjectDir();
 
     const objectId = randomUUID();
     const fullPath = `${privateObjectDir}/uploads/${objectId}`;
@@ -144,7 +147,7 @@ export class ObjectStorageService {
     }
 
     const entityId = parts.slice(1).join('/');
-    let entityDir = this.getPrivateObjectDir();
+    let entityDir = await this.getPrivateObjectDir();
     if (!entityDir.endsWith('/')) {
       entityDir = `${entityDir}/`;
     }
@@ -159,7 +162,7 @@ export class ObjectStorageService {
     return objectFile;
   }
 
-  normalizeObjectEntityPath(rawPath: string): string {
+  async normalizeObjectEntityPath(rawPath: string): Promise<string> {
     if (!rawPath.startsWith('https://storage.googleapis.com/')) {
       return rawPath;
     }
@@ -167,7 +170,7 @@ export class ObjectStorageService {
     const url = new URL(rawPath);
     const rawObjectPath = url.pathname;
 
-    let objectEntityDir = this.getPrivateObjectDir();
+    let objectEntityDir = await this.getPrivateObjectDir();
     if (!objectEntityDir.endsWith('/')) {
       objectEntityDir = `${objectEntityDir}/`;
     }
@@ -184,7 +187,7 @@ export class ObjectStorageService {
     rawPath: string,
     aclPolicy: ObjectAclPolicy,
   ): Promise<string> {
-    const normalizedPath = this.normalizeObjectEntityPath(rawPath);
+    const normalizedPath = await this.normalizeObjectEntityPath(rawPath);
     if (!normalizedPath.startsWith('/')) {
       return normalizedPath;
     }

@@ -611,3 +611,26 @@ export interface StoreDashboard {
   recentOrders: Order[];
 }
 
+export interface PlatformSetting {
+  key: string;
+  /** Plaintext for non-secrets; "••••••••" for secrets that have a value; "" if unset */
+  value: string;
+  isSecret: boolean;
+  updatedAt: string;
+}
+
+export interface PlatformSettingInput {
+  key: string;
+  value: string;
+  isSecret?: boolean;
+}
+
+export interface PlatformSettingsUpdate {
+  settings: PlatformSettingInput[];
+}
+
+export interface TestEmailResult {
+  success: boolean;
+  message: string;
+}
+

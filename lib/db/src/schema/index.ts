@@ -5,3 +5,4 @@ export * from "./products";
 export * from "./categories";
 export * from "./artwork";
 export * from "./orders";
+export * from "./platform_settings";

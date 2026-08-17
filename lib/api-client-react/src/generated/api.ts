@@ -39,6 +39,8 @@ import type {
   OrderStatusUpdate,
   PasswordChangeInput,
   PlatformAnalytics,
+  PlatformSetting,
+  PlatformSettingsUpdate,
   Product,
   ProductInput,
   ProductUpdate,
@@ -49,6 +51,7 @@ import type {
   StoreInput,
   StoreUpdate,
   StorefrontConfig,
+  TestEmailResult,
   WholesaleOrderInput
 } from './api.schemas';
 
@@ -1331,6 +1334,225 @@ export const useUpdateOrderStatusSuperAdmin = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateOrderStatusSuperAdminMutationOptions(options));
+    }
+
+export const getGetPlatformSettingsUrl = () => {
+
+
+
+
+  return `/api/super-admin/settings`
+}
+
+/**
+ * @summary Get all platform settings (secret values are masked)
+ */
+export const getPlatformSettings = async ( options?: Parameters<typeof customFetch>[1]): Promise<PlatformSetting[]> => {
+
+  return customFetch<PlatformSetting[]>(getGetPlatformSettingsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetPlatformSettingsQueryKey = () => {
+    return [
+    `/api/super-admin/settings`
+    ] as const;
+    }
+
+
+export const getGetPlatformSettingsQueryOptions = <TData = Awaited<ReturnType<typeof getPlatformSettings>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetPlatformSettingsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getPlatformSettings>>> = ({ signal }) => getPlatformSettings({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getPlatformSettings>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetPlatformSettingsQueryResult = NonNullable<Awaited<ReturnType<typeof getPlatformSettings>>>
+export type GetPlatformSettingsQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get all platform settings (secret values are masked)
+ */
+
+export function useGetPlatformSettings<TData = Awaited<ReturnType<typeof getPlatformSettings>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getPlatformSettings>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetPlatformSettingsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdatePlatformSettingsUrl = () => {
+
+
+
+
+  return `/api/super-admin/settings`
+}
+
+/**
+ * @summary Upsert a batch of platform settings
+ */
+export const updatePlatformSettings = async (platformSettingsUpdate: PlatformSettingsUpdate, options?: Parameters<typeof customFetch>[1]): Promise<PlatformSetting[]> => {
+
+  return customFetch<PlatformSetting[]>(getUpdatePlatformSettingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(platformSettingsUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdatePlatformSettingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePlatformSettings>>, TError,{data: BodyType<PlatformSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updatePlatformSettings>>, TError,{data: BodyType<PlatformSettingsUpdate>}, TContext> => {
+
+const mutationKey = ['updatePlatformSettings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updatePlatformSettings>>, {data: BodyType<PlatformSettingsUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updatePlatformSettings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdatePlatformSettingsMutationResult = NonNullable<Awaited<ReturnType<typeof updatePlatformSettings>>>
+    export type UpdatePlatformSettingsMutationBody = BodyType<PlatformSettingsUpdate>
+    export type UpdatePlatformSettingsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Upsert a batch of platform settings
+ */
+export const useUpdatePlatformSettings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updatePlatformSettings>>, TError,{data: BodyType<PlatformSettingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updatePlatformSettings>>,
+        TError,
+        {data: BodyType<PlatformSettingsUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdatePlatformSettingsMutationOptions(options));
+    }
+
+export const getTestSmtpEmailUrl = () => {
+
+
+
+
+  return `/api/super-admin/settings/test-email`
+}
+
+/**
+ * @summary Send a test email using current SMTP settings
+ */
+export const testSmtpEmail = async ( options?: Parameters<typeof customFetch>[1]): Promise<TestEmailResult> => {
+
+  return customFetch<TestEmailResult>(getTestSmtpEmailUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getTestSmtpEmailMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testSmtpEmail>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof testSmtpEmail>>, TError,void, TContext> => {
+
+const mutationKey = ['testSmtpEmail'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof testSmtpEmail>>, void> = () => {
+
+
+          return  testSmtpEmail(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type TestSmtpEmailMutationResult = NonNullable<Awaited<ReturnType<typeof testSmtpEmail>>>
+
+    export type TestSmtpEmailMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Send a test email using current SMTP settings
+ */
+export const useTestSmtpEmail = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof testSmtpEmail>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof testSmtpEmail>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getTestSmtpEmailMutationOptions(options));
     }
 
 export const getGetStoreDashboardUrl = () => {

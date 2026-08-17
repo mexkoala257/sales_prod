@@ -434,6 +434,47 @@ export const UpdateOrderStatusSuperAdminResponse = zod.object({
 
 
 /**
+ * @summary Get all platform settings (secret values are masked)
+ */
+export const GetPlatformSettingsResponseItem = zod.object({
+  "key": zod.string(),
+  "value": zod.string().describe('Plaintext for non-secrets; \"••••••••\" for secrets that have a value; \"\" if unset'),
+  "isSecret": zod.boolean(),
+  "updatedAt": zod.string()
+})
+export const GetPlatformSettingsResponse = zod.array(GetPlatformSettingsResponseItem)
+
+
+/**
+ * @summary Upsert a batch of platform settings
+ */
+export const UpdatePlatformSettingsBody = zod.object({
+  "settings": zod.array(zod.object({
+  "key": zod.string(),
+  "value": zod.string(),
+  "isSecret": zod.boolean().optional()
+}))
+})
+
+export const UpdatePlatformSettingsResponseItem = zod.object({
+  "key": zod.string(),
+  "value": zod.string().describe('Plaintext for non-secrets; \"••••••••\" for secrets that have a value; \"\" if unset'),
+  "isSecret": zod.boolean(),
+  "updatedAt": zod.string()
+})
+export const UpdatePlatformSettingsResponse = zod.array(UpdatePlatformSettingsResponseItem)
+
+
+/**
+ * @summary Send a test email using current SMTP settings
+ */
+export const TestSmtpEmailResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string()
+})
+
+
+/**
  * @summary Store admin dashboard summary
  */
 export const GetStoreDashboardResponse = zod.object({
