@@ -74,6 +74,11 @@ export interface Store {
   fontFamily?: StoreFontFamily;
   isActive: boolean;
   demoMode: boolean;
+  /**
+     * Custom domain pointing at this storefront (e.g. apexathletics.com)
+     * @nullable
+     */
+  customDomain?: string | null;
   /** @nullable */
   shopifyDomain?: string | null;
   /** @nullable */
@@ -107,6 +112,11 @@ export interface StoreInput {
   accentColor?: string;
   fontFamily?: StoreInputFontFamily;
   demoMode?: boolean;
+  /**
+     * Custom domain pointing at this storefront (apex form, e.g. apexathletics.com). Pass null to clear.
+     * @nullable
+     */
+  customDomain?: string | null;
   shopifyDomain?: string;
   shopifyStorefrontToken?: string;
   shopifyAdminKey?: string;
@@ -132,6 +142,11 @@ export interface StoreUpdate {
   fontFamily?: StoreUpdateFontFamily;
   isActive?: boolean;
   demoMode?: boolean;
+  /**
+     * Custom domain pointing at this storefront (apex form, e.g. apexathletics.com). Pass null to clear.
+     * @nullable
+     */
+  customDomain?: string | null;
   shopifyDomain?: string;
   shopifyStorefrontToken?: string;
   shopifyAdminKey?: string;
@@ -157,6 +172,7 @@ export interface AdminUser {
   email: string;
   storeId: number;
   storeName: string;
+  isActive: boolean;
   createdAt: string;
 }
 
@@ -633,4 +649,11 @@ export interface TestEmailResult {
   success: boolean;
   message: string;
 }
+
+export type ResolveStorefrontByDomainParams = {
+/**
+ * Custom domain to resolve (e.g. apexathletics.com)
+ */
+domain: string;
+};
 

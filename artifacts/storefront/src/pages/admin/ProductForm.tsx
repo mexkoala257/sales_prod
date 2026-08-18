@@ -12,11 +12,18 @@ export default function AdminProductForm() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
-  const { data: product, isLoading } = useGetAdminProduct(id || '', { query: { enabled: isEditing } });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: product, isLoading } = useGetAdminProduct(id || '', { query: { enabled: isEditing } as any });
   const createProduct = useCreateProduct();
   const updateProduct = useUpdateProduct();
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    name: string; description: string; price: number; compareAtPrice: number;
+    status: ProductInputStatus; channel: ProductInputChannel;
+    preOrder: boolean; preOrderNotice: string;
+    variants: Array<{ id?: number; sku: string; inventory: number; price: number; color: string; size: string }>;
+    images: Array<{ id?: string; url: string; displayOrder: number }>;
+  }>({
     name: '',
     description: '',
     price: 0,

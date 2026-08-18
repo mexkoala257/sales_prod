@@ -57,6 +57,10 @@ services:
       context: .
       dockerfile: artifacts/storefront/Dockerfile
       target: runtime
+      args:
+        # Baked into the SPA bundle so the browser can tell the platform host
+        # apart from custom brand domains.  Set to your platform's public domain.
+        VITE_PLATFORM_HOST: ${VITE_PLATFORM_HOST:-}
     restart: unless-stopped
     depends_on:
       - api

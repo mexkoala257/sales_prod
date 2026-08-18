@@ -6,11 +6,9 @@
  * OpenAPI spec version: 0.1.0
  */
 
-export interface AdminUser {
-  id: number;
-  email: string;
-  storeId: number;
-  storeName: string;
-  isActive: boolean;
-  createdAt: string;
-}
+export type ResolveStorefrontByDomainParams = {
+/**
+ * Custom domain to resolve (e.g. apexathletics.com)
+ */
+domain: string;
+};

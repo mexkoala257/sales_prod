@@ -1,7 +1,7 @@
 import { useListStores, useDeleteStore, getListStoresQueryKey } from '@workspace/api-client-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Button, Badge } from '@/components/ui';
 import { Link } from 'wouter';
-import { Plus, Edit, ExternalLink, Trash2, Users } from 'lucide-react';
+import { Plus, Edit, ExternalLink, Trash2, Users, Globe } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 
@@ -13,7 +13,7 @@ export default function SuperAdminStores() {
   const handleDelete = (id: string) => {
     if (confirm('Are you absolutely sure you want to delete this store? This cannot be undone.')) {
       deleteStore.mutate({ storeId: id }, {
-        onSuccess: () => queryClient.invalidateQueries({ queryKey: getListStoresQueryKey() })
+        onSuccess: () => queryClient.invalidateQueries({ queryKey: getListStoresQueryKey() }),
       });
     }
   };
@@ -38,6 +38,7 @@ export default function SuperAdminStores() {
           <TableHeader>
             <TableRow>
               <TableHead>Store Name</TableHead>
+              <TableHead>Domain</TableHead>
               <TableHead>Status</TableHead>
               <TableHead className="text-right">Products</TableHead>
               <TableHead className="text-right">Orders</TableHead>
@@ -54,6 +55,16 @@ export default function SuperAdminStores() {
                     <span>{store.name}</span>
                     <span className="text-xs text-muted-foreground font-mono">/{store.slug}</span>
                   </div>
+                </TableCell>
+                <TableCell>
+                  {store.customDomain ? (
+                    <div className="flex items-center gap-1.5 font-mono text-xs">
+                      <Globe className="h-3 w-3 text-emerald-600 shrink-0" />
+                      <span className="text-foreground">{store.customDomain}</span>
+                    </div>
+                  ) : (
+                    <span className="text-muted-foreground text-xs">—</span>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Badge variant={store.isActive ? 'default' : 'secondary'} className="rounded-none font-mono uppercase text-[10px]">
@@ -87,7 +98,7 @@ export default function SuperAdminStores() {
             ))}
             {stores?.length === 0 && (
               <TableRow>
-                <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                <TableCell colSpan={8} className="text-center py-8 text-muted-foreground">
                   No storefronts configured. Deploy your first store to begin.
                 </TableCell>
               </TableRow>

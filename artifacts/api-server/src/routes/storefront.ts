@@ -46,12 +46,9 @@ router.get("/storefront", async (_req, res): Promise<void> => {
   res.json(stores);
 });
 
-// ── Store config ──────────────────────────────────────────────────
-router.get("/storefront/:storeSlug/config", requireStorefrontFeature, async (req, res): Promise<void> => {
-  const storeSlug = String(req.params.storeSlug);
-  const [store] = await db.select().from(storesTable).where(eq(storesTable.slug, storeSlug));
-  if (!store || !store.isActive) { res.status(404).json({ error: "Storefront not found" }); return; }
-  res.json({
+// ── Shared config builder ─────────────────────────────────────────
+function storeConfigResponse(store: typeof storesTable.$inferSelect) {
+  return {
     id: store.id,
     name: store.name,
     slug: store.slug,
@@ -61,7 +58,32 @@ router.get("/storefront/:storeSlug/config", requireStorefrontFeature, async (req
     primaryColor: store.primaryColor,
     accentColor: store.accentColor,
     fontFamily: store.fontFamily,
-  });
+  };
+}
+
+// ── Domain resolver ───────────────────────────────────────────────
+// Must come before /:storeSlug/* routes so "resolve" isn't treated as a slug.
+router.get("/storefront/resolve", async (req, res): Promise<void> => {
+  let domain = String(req.query.domain ?? "").trim().toLowerCase();
+  if (!domain) { res.status(400).json({ error: "domain query param required" }); return; }
+  // Normalise: strip www. so "www.brand.com" and "brand.com" both match the apex stored in DB
+  if (domain.startsWith("www.")) domain = domain.slice(4);
+
+  const [store] = await db
+    .select()
+    .from(storesTable)
+    .where(and(eq(storesTable.customDomain, domain), eq(storesTable.isActive, true)));
+
+  if (!store) { res.status(404).json({ error: "No active storefront found for this domain" }); return; }
+  res.json(storeConfigResponse(store));
+});
+
+// ── Store config ──────────────────────────────────────────────────
+router.get("/storefront/:storeSlug/config", requireStorefrontFeature, async (req, res): Promise<void> => {
+  const storeSlug = String(req.params.storeSlug);
+  const [store] = await db.select().from(storesTable).where(eq(storesTable.slug, storeSlug));
+  if (!store || !store.isActive) { res.status(404).json({ error: "Storefront not found" }); return; }
+  res.json(storeConfigResponse(store));
 });
 
 // ── Products ──────────────────────────────────────────────────────

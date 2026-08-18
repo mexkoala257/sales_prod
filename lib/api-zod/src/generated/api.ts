@@ -162,6 +162,7 @@ export const ListStoresResponseItem = zod.object({
   "fontFamily": zod.enum(['Inter', 'Playfair Display', 'Outfit', 'Space Grotesk']).optional(),
   "isActive": zod.boolean(),
   "demoMode": zod.boolean(),
+  "customDomain": zod.string().nullish().describe('Custom domain pointing at this storefront (e.g. apexathletics.com)'),
   "shopifyDomain": zod.string().nullish(),
   "shopifyStorefrontToken": zod.string().nullish(),
   "shopifyAdminKey": zod.string().nullish(),
@@ -187,6 +188,7 @@ export const CreateStoreBody = zod.object({
   "accentColor": zod.string().optional(),
   "fontFamily": zod.enum(['Inter', 'Playfair Display', 'Outfit', 'Space Grotesk']).optional(),
   "demoMode": zod.boolean().optional(),
+  "customDomain": zod.string().nullish().describe('Custom domain pointing at this storefront (apex form, e.g. apexathletics.com). Pass null to clear.'),
   "shopifyDomain": zod.string().optional(),
   "shopifyStorefrontToken": zod.string().optional(),
   "shopifyAdminKey": zod.string().optional()
@@ -204,6 +206,7 @@ export const CreateStoreResponse = zod.object({
   "fontFamily": zod.enum(['Inter', 'Playfair Display', 'Outfit', 'Space Grotesk']).optional(),
   "isActive": zod.boolean(),
   "demoMode": zod.boolean(),
+  "customDomain": zod.string().nullish().describe('Custom domain pointing at this storefront (e.g. apexathletics.com)'),
   "shopifyDomain": zod.string().nullish(),
   "shopifyStorefrontToken": zod.string().nullish(),
   "shopifyAdminKey": zod.string().nullish(),
@@ -234,6 +237,7 @@ export const GetStoreResponse = zod.object({
   "fontFamily": zod.enum(['Inter', 'Playfair Display', 'Outfit', 'Space Grotesk']).optional(),
   "isActive": zod.boolean(),
   "demoMode": zod.boolean(),
+  "customDomain": zod.string().nullish().describe('Custom domain pointing at this storefront (e.g. apexathletics.com)'),
   "shopifyDomain": zod.string().nullish(),
   "shopifyStorefrontToken": zod.string().nullish(),
   "shopifyAdminKey": zod.string().nullish(),
@@ -262,6 +266,7 @@ export const UpdateStoreBody = zod.object({
   "fontFamily": zod.enum(['Inter', 'Playfair Display', 'Outfit', 'Space Grotesk']).optional(),
   "isActive": zod.boolean().optional(),
   "demoMode": zod.boolean().optional(),
+  "customDomain": zod.string().nullish().describe('Custom domain pointing at this storefront (apex form, e.g. apexathletics.com). Pass null to clear.'),
   "shopifyDomain": zod.string().optional(),
   "shopifyStorefrontToken": zod.string().optional(),
   "shopifyAdminKey": zod.string().optional()
@@ -279,6 +284,7 @@ export const UpdateStoreResponse = zod.object({
   "fontFamily": zod.enum(['Inter', 'Playfair Display', 'Outfit', 'Space Grotesk']).optional(),
   "isActive": zod.boolean(),
   "demoMode": zod.boolean(),
+  "customDomain": zod.string().nullish().describe('Custom domain pointing at this storefront (e.g. apexathletics.com)'),
   "shopifyDomain": zod.string().nullish(),
   "shopifyStorefrontToken": zod.string().nullish(),
   "shopifyAdminKey": zod.string().nullish(),
@@ -312,6 +318,7 @@ export const ListStoreAdminsResponseItem = zod.object({
   "email": zod.string(),
   "storeId": zod.number(),
   "storeName": zod.string(),
+  "isActive": zod.boolean(),
   "createdAt": zod.string()
 })
 export const ListStoreAdminsResponse = zod.array(ListStoreAdminsResponseItem)
@@ -334,6 +341,7 @@ export const CreateStoreAdminResponse = zod.object({
   "email": zod.string(),
   "storeId": zod.number(),
   "storeName": zod.string(),
+  "isActive": zod.boolean(),
   "createdAt": zod.string()
 })
 
@@ -1334,6 +1342,26 @@ export const GetB2BOrderResponse = zod.object({
   "artworkUrl": zod.string().nullish()
 })).optional(),
   "createdAt": zod.string()
+})
+
+
+/**
+ * @summary Resolve a storefront by its custom domain
+ */
+export const ResolveStorefrontByDomainQueryParams = zod.object({
+  "domain": zod.coerce.string().describe('Custom domain to resolve (e.g. apexathletics.com)')
+})
+
+export const ResolveStorefrontByDomainResponse = zod.object({
+  "id": zod.number(),
+  "name": zod.string(),
+  "slug": zod.string(),
+  "logoText": zod.string().nullish(),
+  "logoImageUrl": zod.string().nullish(),
+  "announcementBar": zod.string().nullish(),
+  "primaryColor": zod.string(),
+  "accentColor": zod.string(),
+  "fontFamily": zod.string()
 })
 
 

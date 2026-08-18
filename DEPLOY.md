@@ -29,11 +29,12 @@ cd platform
 cp .env.example .env
 ```
 
-Open `.env` and fill in the two required values:
+Open `.env` and fill in the required values:
 
 ```
 POSTGRES_PASSWORD=<strong-random-password>
 SESSION_SECRET=<strong-random-secret>
+VITE_PLATFORM_HOST=platform.example.com
 ```
 
 Generate secure values:
@@ -41,6 +42,14 @@ Generate secure values:
 openssl rand -base64 32   # use for POSTGRES_PASSWORD
 openssl rand -base64 48   # use for SESSION_SECRET
 ```
+
+**`VITE_PLATFORM_HOST` is required for self-hosted deployments.**  Set it to the
+hostname where the platform admin UI is served (e.g. `platform.example.com`).
+This value is baked into the React SPA bundle at build time so the browser can
+distinguish the platform's own hostname from the custom brand domains assigned
+to individual storefronts.  Without it, visiting your platform URL causes the
+SPA to enter "custom domain mode" and show "Store not found" instead of the
+admin login page.
 
 ### 3. Build images and start services
 
@@ -58,13 +67,18 @@ Three containers start:
 | `api` | Node.js 24 API server on internal port 8080 |
 | `web` | Nginx serving the React SPA and proxying `/api` to the API server |
 
-### 4. Push the database schema
+### 4. Apply database migrations
 
-Run once after the first deploy, and again whenever the schema changes:
+**Run on every deploy** — the runner is idempotent (already-applied files are skipped):
 
 ```bash
 docker compose --profile tools run --rm migrate
 ```
+
+The `migrate` service uses a tracked SQL runner (`lib/db/migrate.mjs`) that records
+each applied file in a `_migrations` table.  New installations run all files; upgrades
+run only the files added since the last deploy.  Always run this **before** restarting
+the API containers so the schema is ready when the new code starts.
 
 ### 5. (Optional) Load demo data
 
@@ -99,10 +113,13 @@ Open `http://your-server-ip` — you should see the Platform Storefronts landing
 ```bash
 git pull
 docker compose build
-docker compose up -d
-# If lib/db/src/schema/ changed:
+# Always run migrations before restarting — safe to re-run, skips already-applied files
 docker compose --profile tools run --rm migrate
+docker compose up -d
 ```
+
+The migration runner tracks applied files in a `_migrations` table and is safe to run
+on every upgrade regardless of whether the schema changed.
 
 ---
 
@@ -121,7 +138,7 @@ Then restart: `docker compose up -d`
 apt install nginx certbot python3-certbot-nginx
 ```
 
-**Step 3** — Add a host Nginx site:
+**Step 3** — Add a host Nginx site for the platform domain:
 ```nginx
 server {
     server_name yourdomain.com;
@@ -140,6 +157,88 @@ certbot --nginx -d yourdomain.com
 ```
 
 Full guide: https://certbot.eff.org/instructions
+
+---
+
+## Custom Domain Storefronts (Per-Brand TLS)
+
+Each store can have its own vanity domain (e.g. `apexathletics.com`).  When set,
+consumers visiting that domain see only that brand — no platform chrome.
+
+### 1 — Configure the domain in the Super Admin
+
+In **Super Admin → Stores → Edit Store**, enter the bare domain in the
+**Custom Domain** field (no `https://`, no trailing slash):
+
+```
+apexathletics.com
+```
+
+Save.  The API will now route requests arriving with that `Host` header to this store.
+
+### 2 — Point the domain's DNS at your server
+
+In your domain registrar / DNS panel, create an **A record**:
+
+| Type | Name | Value          | TTL  |
+|------|------|----------------|------|
+| A    | @    | `<SERVER_IP>`  | 300  |
+| A    | www  | `<SERVER_IP>`  | 300  |
+
+Replace `<SERVER_IP>` with your VPS public IP.
+
+### 3 — Add a host Nginx server block for the brand domain
+
+Create `/etc/nginx/sites-available/apexathletics.com`:
+
+```nginx
+server {
+    server_name apexathletics.com www.apexathletics.com;
+
+    location / {
+        proxy_pass         http://127.0.0.1:8081;
+        # Forward the original Host so the API can resolve the correct store
+        proxy_set_header   Host              $host;
+        proxy_set_header   X-Real-IP         $remote_addr;
+        proxy_set_header   X-Forwarded-For   $proxy_add_x_forwarded_for;
+        proxy_set_header   X-Forwarded-Proto https;
+    }
+}
+```
+
+Enable it:
+```bash
+ln -s /etc/nginx/sites-available/apexathletics.com /etc/nginx/sites-enabled/
+nginx -t && systemctl reload nginx
+```
+
+### 4 — Obtain a TLS certificate for the brand domain
+
+```bash
+certbot --nginx -d apexathletics.com -d www.apexathletics.com
+```
+
+Certbot will automatically edit the server block to add HTTPS and the
+Let's Encrypt certificate.
+
+### 5 — Repeat for each brand domain
+
+Each storefront that has a custom domain configured needs its own Nginx server
+block and its own Certbot certificate.  Certbot auto-renews all certificates;
+no further action is needed after the initial setup.
+
+### How domain routing works
+
+1. **DNS** resolves `apexathletics.com` → your server IP.
+2. **Host Nginx** receives the request, proxies it to the platform container
+   (port 8081) preserving the `Host` header.
+3. The **React SPA** loads in the visitor's browser.  It detects that the
+   hostname is not a platform host and calls
+   `GET /api/storefront/resolve?domain=apexathletics.com`.
+4. The **API** looks up the store with `custom_domain = 'apexathletics.com'`
+   and returns the store's slug + theme config.
+5. The SPA renders the brand's storefront at `/`, `/products`, etc. — no
+   `/store/:slug` prefix in the URL.
 
 ---
 

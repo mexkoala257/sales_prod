@@ -1,5 +1,6 @@
-import { Switch, Route, Redirect } from 'wouter';
+import { Switch, Route } from 'wouter';
 import { SuperAdminLayout, AdminLayout, B2BLayout } from './components/layouts';
+import { isPlatformHost } from './context/StorefrontContext';
 
 // Super Admin
 import SuperAdminLogin from './pages/super-admin/Login';
@@ -36,10 +37,28 @@ import StorefrontProducts from './pages/storefront/Products';
 import StorefrontProductDetail from './pages/storefront/ProductDetail';
 import StorefrontCart from './pages/storefront/Cart';
 
+// Detect whether the app is running on a custom brand domain vs. the platform host.
+// Computed once at module load — hostname never changes during a session.
+const isCustomDomain = !isPlatformHost(window.location.hostname);
+
 export function AppRoutes() {
   return (
     <Switch>
-      {/* Super Admin */}
+      {/* ── Custom-domain storefront routes ──────────────────────────────
+          When a brand domain (e.g. apexathletics.com) points at this server,
+          the storefront is served at the root path.  Admin paths still work so
+          operators can reach /super-admin/login from any domain. */}
+      {isCustomDomain && (
+        <Route path="/products/:productId" component={StorefrontProductDetail} />
+      )}
+      {isCustomDomain && (
+        <Route path="/products" component={StorefrontProducts} />
+      )}
+      {isCustomDomain && (
+        <Route path="/cart" component={StorefrontCart} />
+      )}
+
+      {/* ── Super Admin ───────────────────────────────────────────────── */}
       <Route path="/super-admin/login" component={SuperAdminLogin} />
       <Route path="/super-admin/dashboard"><SuperAdminLayout><SuperAdminDashboard /></SuperAdminLayout></Route>
       <Route path="/super-admin/stores"><SuperAdminLayout><SuperAdminStores /></SuperAdminLayout></Route>
@@ -49,7 +68,7 @@ export function AppRoutes() {
       <Route path="/super-admin/orders"><SuperAdminLayout><SuperAdminOrders /></SuperAdminLayout></Route>
       <Route path="/super-admin/settings"><SuperAdminLayout><SuperAdminSettings /></SuperAdminLayout></Route>
 
-      {/* Store Admin */}
+      {/* ── Store Admin ───────────────────────────────────────────────── */}
       <Route path="/admin/login" component={AdminLogin} />
       <Route path="/admin/dashboard"><AdminLayout><AdminDashboard /></AdminLayout></Route>
       <Route path="/admin/products"><AdminLayout><AdminProducts /></AdminLayout></Route>
@@ -61,7 +80,7 @@ export function AppRoutes() {
       <Route path="/admin/b2b-accounts/:id"><AdminLayout><AdminB2BForm /></AdminLayout></Route>
       <Route path="/admin/orders"><AdminLayout><AdminOrders /></AdminLayout></Route>
 
-      {/* B2B */}
+      {/* ── B2B ──────────────────────────────────────────────────────── */}
       <Route path="/b2b/login" component={B2BLogin} />
       <Route path="/b2b/force-password-change"><B2BForcePassword /></Route>
       <Route path="/b2b/catalog"><B2BLayout><B2BCatalog /></B2BLayout></Route>
@@ -70,14 +89,19 @@ export function AppRoutes() {
       <Route path="/b2b/orders"><B2BLayout><B2BOrders /></B2BLayout></Route>
       <Route path="/b2b/profile"><B2BLayout><B2BProfile /></B2BLayout></Route>
 
-      {/* Public Storefront */}
-      <Route path="/" component={StorefrontList} />
+      {/* ── Platform storefront (slug-based, platform host only) ─────── */}
+      {!isCustomDomain && <Route path="/" component={StorefrontList} />}
       <Route path="/store/:storeSlug" component={StorefrontHome} />
       <Route path="/store/:storeSlug/products" component={StorefrontProducts} />
       <Route path="/store/:storeSlug/products/:productId" component={StorefrontProductDetail} />
       <Route path="/store/:storeSlug/cart" component={StorefrontCart} />
 
-      {/* 404 */}
+      {/* ── Custom domain root (after admin paths) ────────────────────── */}
+      {isCustomDomain && (
+        <Route path="/" component={StorefrontHome} />
+      )}
+
+      {/* ── 404 ──────────────────────────────────────────────────────── */}
       <Route>
         <div className="flex h-screen items-center justify-center">
           <div className="text-center">

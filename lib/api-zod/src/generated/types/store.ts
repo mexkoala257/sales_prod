@@ -22,6 +22,11 @@ export interface Store {
   fontFamily?: StoreFontFamily;
   isActive: boolean;
   demoMode: boolean;
+  /**
+     * Custom domain pointing at this storefront (e.g. apexathletics.com)
+     * @nullable
+     */
+  customDomain?: string | null;
   /** @nullable */
   shopifyDomain?: string | null;
   /** @nullable */

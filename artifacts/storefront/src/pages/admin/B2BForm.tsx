@@ -11,7 +11,8 @@ export default function AdminB2BForm() {
   const [, setLocation] = useLocation();
   const queryClient = useQueryClient();
 
-  const { data: client, isLoading } = useGetB2BClient(id || '', { query: { enabled: isEditing } });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: client, isLoading } = useGetB2BClient(id || '', { query: { enabled: isEditing } as any });
   const createClient = useCreateB2BClient();
   const updateClient = useUpdateB2BClient();
 

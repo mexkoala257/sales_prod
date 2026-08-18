@@ -900,6 +900,28 @@ paths:
                 $ref: "#/components/schemas/Order"
 
   # ─── PUBLIC STOREFRONT ──────────────────────────────────
+  /storefront/resolve:
+    get:
+      operationId: resolveStorefrontByDomain
+      tags: [storefront]
+      summary: Resolve a storefront by its custom domain
+      parameters:
+        - name: domain
+          in: query
+          required: true
+          schema:
+            type: string
+          description: Custom domain to resolve (e.g. apexathletics.com)
+      responses:
+        "200":
+          description: Storefront config for the domain
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorefrontConfig"
+        "404":
+          description: No active storefront found for this domain
+
   /storefront/{storeSlug}/config:
     get:
       operationId: getStorefrontConfig
@@ -1097,6 +1119,9 @@ components:
           type: boolean
         demoMode:
           type: boolean
+        customDomain:
+          type: ["string", "null"]
+          description: Custom domain pointing at this storefront (e.g. apexathletics.com)
         shopifyDomain:
           type: ["string", "null"]
         shopifyStorefrontToken:
@@ -1137,6 +1162,9 @@ components:
           enum: [Inter, Playfair Display, Outfit, Space Grotesk]
         demoMode:
           type: boolean
+        customDomain:
+          type: ["string", "null"]
+          description: Custom domain pointing at this storefront (apex form, e.g. apexathletics.com). Pass null to clear.
         shopifyDomain:
           type: string
         shopifyStorefrontToken:
@@ -1166,6 +1194,9 @@ components:
           type: boolean
         demoMode:
           type: boolean
+        customDomain:
+          type: ["string", "null"]
+          description: Custom domain pointing at this storefront (apex form, e.g. apexathletics.com). Pass null to clear.
         shopifyDomain:
           type: string
         shopifyStorefrontToken:
@@ -1199,7 +1230,7 @@ components:
     # ── Admin User ────────────────────────────────────────────
     AdminUser:
       type: object
-      required: [id, email, storeId, storeName, createdAt]
+      required: [id, email, storeId, storeName, isActive, createdAt]
       properties:
         id:
           type: number
@@ -1209,6 +1240,8 @@ components:
           type: number
         storeName:
           type: string
+        isActive:
+          type: boolean
         createdAt:
           type: string
 

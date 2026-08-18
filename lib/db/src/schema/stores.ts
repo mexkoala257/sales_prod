@@ -14,6 +14,7 @@ export const storesTable = pgTable("stores", {
   fontFamily: text("font_family").notNull().default("Inter"),
   isActive: boolean("is_active").notNull().default(true),
   demoMode: boolean("demo_mode").notNull().default(true),
+  customDomain: text("custom_domain").unique(),
   shopifyDomain: text("shopify_domain"),
   shopifyStorefrontToken: text("shopify_storefront_token"),
   shopifyAdminKey: text("shopify_admin_key"),

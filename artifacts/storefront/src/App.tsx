@@ -5,6 +5,7 @@ import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import { Route, Switch, useLocation, Router as WouterRouter } from 'wouter';
 import { AuthProvider } from './context/AuthContext';
+import { StorefrontProvider } from './context/StorefrontContext';
 import { AppRoutes } from './routes';
 
 const queryClient = new QueryClient();
@@ -20,9 +21,11 @@ function App() {
       <AuthProvider>
         <TooltipProvider>
           <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}>
-            <RoutedErrorBoundary>
-              <AppRoutes />
-            </RoutedErrorBoundary>
+            <StorefrontProvider>
+              <RoutedErrorBoundary>
+                <AppRoutes />
+              </RoutedErrorBoundary>
+            </StorefrontProvider>
           </WouterRouter>
           <Toaster />
         </TooltipProvider>

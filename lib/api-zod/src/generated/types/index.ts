@@ -52,6 +52,7 @@ export * from './productUpdate';
 export * from './productUpdateChannel';
 export * from './productUpdateStatus';
 export * from './productVariant';
+export * from './resolveStorefrontByDomainParams';
 export * from './retailOrderInput';
 export * from './retailOrderInputPaymentTerms';
 export * from './shopifySyncResult';

@@ -44,6 +44,7 @@ import type {
   Product,
   ProductInput,
   ProductUpdate,
+  ResolveStorefrontByDomainParams,
   RetailOrderInput,
   ShopifySyncResult,
   Store,
@@ -3768,6 +3769,90 @@ export function useGetB2BOrder<TData = Awaited<ReturnType<typeof getB2BOrder>>, 
  ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
 
   const queryOptions = getGetB2BOrderQueryOptions(orderId,options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getResolveStorefrontByDomainUrl = (params: ResolveStorefrontByDomainParams,) => {
+  const normalizedParams = new URLSearchParams();
+
+  Object.entries(params || {}).forEach(([key, value]) => {
+
+    if (value !== undefined) {
+      normalizedParams.append(key, value === null ? 'null' : String(value))
+    }
+  });
+
+  const stringifiedParams = normalizedParams.toString();
+
+  return stringifiedParams.length > 0 ? `/api/storefront/resolve?${stringifiedParams}` : `/api/storefront/resolve`
+}
+
+/**
+ * @summary Resolve a storefront by its custom domain
+ */
+export const resolveStorefrontByDomain = async (params: ResolveStorefrontByDomainParams, options?: Parameters<typeof customFetch>[1]): Promise<StorefrontConfig> => {
+
+  return customFetch<StorefrontConfig>(getResolveStorefrontByDomainUrl(params),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getResolveStorefrontByDomainQueryKey = (params?: ResolveStorefrontByDomainParams,) => {
+    return [
+    `/api/storefront/resolve`, ...(params ? [params] : [])
+    ] as const;
+    }
+
+
+export const getResolveStorefrontByDomainQueryOptions = <TData = Awaited<ReturnType<typeof resolveStorefrontByDomain>>, TError = ErrorType<void>>(params: ResolveStorefrontByDomainParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof resolveStorefrontByDomain>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getResolveStorefrontByDomainQueryKey(params);
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof resolveStorefrontByDomain>>> = ({ signal }) => resolveStorefrontByDomain(params, { signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof resolveStorefrontByDomain>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ResolveStorefrontByDomainQueryResult = NonNullable<Awaited<ReturnType<typeof resolveStorefrontByDomain>>>
+export type ResolveStorefrontByDomainQueryError = ErrorType<void>
+
+
+/**
+ * @summary Resolve a storefront by its custom domain
+ */
+
+export function useResolveStorefrontByDomain<TData = Awaited<ReturnType<typeof resolveStorefrontByDomain>>, TError = ErrorType<void>>(
+ params: ResolveStorefrontByDomainParams, options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof resolveStorefrontByDomain>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getResolveStorefrontByDomainQueryOptions(params,options)
 
   const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
 

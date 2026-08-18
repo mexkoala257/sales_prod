@@ -10,6 +10,12 @@
 FROM node:24-slim AS builder
 WORKDIR /workspace
 
+# VITE_PLATFORM_HOST is baked into the SPA bundle at build time so the browser
+# can identify the platform's own hostname and not mistake it for a custom brand
+# domain.  Pass it via --build-arg or the compose `args` section.
+# Example: docker build --build-arg VITE_PLATFORM_HOST=platform.example.com .
+ARG VITE_PLATFORM_HOST
+
 RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
 
 # Copy workspace manifests first (better layer caching for deps)
@@ -29,9 +35,11 @@ COPY lib/               lib/
 COPY artifacts/storefront/ artifacts/storefront/
 
 # Build the Vite SPA
-# BASE_PATH=/ serves at root; PORT is required by vite.config.ts at parse time
+# BASE_PATH=/ serves at root; PORT is required by vite.config.ts at parse time.
+# VITE_PLATFORM_HOST is forwarded from the build ARG so it is inlined into the bundle.
 RUN cd artifacts/storefront && \
     BASE_PATH=/ PORT=3000 NODE_ENV=production \
+    VITE_PLATFORM_HOST=${VITE_PLATFORM_HOST} \
     pnpm build
 
 # ── Runtime ────────────────────────────────────────────────────────────────

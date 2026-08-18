@@ -39,7 +39,10 @@ RUN cd artifacts/api-server && node build-seed.mjs
 RUN pnpm --filter @workspace/api-server deploy --legacy --prod /api-deploy
 
 # ── Migration runner ───────────────────────────────────────────────────────
-# One-shot service: docker compose --profile tools run --rm migrate
+# Tracked SQL migration runner — run on every deploy before starting the API.
+#   docker compose --profile tools run --rm migrate
+#
+# Safe to re-run: already-applied files are skipped via the _migrations table.
 FROM node:24-alpine AS migrate
 WORKDIR /workspace
 
@@ -47,18 +50,14 @@ RUN corepack enable && corepack prepare pnpm@10.26.1 --activate
 
 COPY package.json pnpm-workspace.yaml pnpm-lock.yaml ./
 COPY lib/db/package.json               lib/db/
-COPY lib/api-zod/package.json          lib/api-zod/
-COPY lib/api-client-react/package.json lib/api-client-react/
-COPY lib/api-spec/package.json         lib/api-spec/
-COPY artifacts/api-server/package.json artifacts/api-server/
 
-RUN pnpm install --frozen-lockfile
+RUN pnpm install --frozen-lockfile --filter @workspace/db
 
-# tsconfig.base.json is required by lib/db/tsconfig.json (extends ../../tsconfig.base.json)
-COPY tsconfig.base.json ./
-COPY lib/ lib/
+# Copy the migration runner and SQL files
+COPY lib/db/migrate.mjs   lib/db/
+COPY lib/db/migrations/   lib/db/migrations/
 
-CMD ["pnpm", "--filter", "@workspace/db", "run", "push"]
+CMD ["pnpm", "--filter", "@workspace/db", "run", "migrate"]
 
 # ── Runtime ────────────────────────────────────────────────────────────────
 FROM node:24-alpine AS runtime

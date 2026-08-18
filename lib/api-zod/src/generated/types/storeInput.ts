@@ -17,6 +17,11 @@ export interface StoreInput {
   accentColor?: string;
   fontFamily?: StoreInputFontFamily;
   demoMode?: boolean;
+  /**
+     * Custom domain pointing at this storefront (apex form, e.g. apexathletics.com). Pass null to clear.
+     * @nullable
+     */
+  customDomain?: string | null;
   shopifyDomain?: string;
   shopifyStorefrontToken?: string;
   shopifyAdminKey?: string;

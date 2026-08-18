@@ -289,7 +289,14 @@ router.patch("/admin/b2b-accounts/:clientId", requireStoreAdmin, async (req, res
   const parsed = UpdateB2BClientBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
-  const [client] = await db.update(b2bClientsTable).set(parsed.data).where(and(eq(b2bClientsTable.id, id), eq(b2bClientsTable.storeId, storeId))).returning();
+  // discountPercent is number in Zod but Drizzle's numeric column expects string at the type level
+  const { discountPercent, ...rest } = parsed.data;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const updateData: any = {
+    ...rest,
+    ...(discountPercent !== undefined ? { discountPercent: String(discountPercent) } : {}),
+  };
+  const [client] = await db.update(b2bClientsTable).set(updateData).where(and(eq(b2bClientsTable.id, id), eq(b2bClientsTable.storeId, storeId))).returning();
   if (!client) { res.status(404).json({ error: "Client not found" }); return; }
   const assigned = await db.select({ productId: b2bClientProductsTable.productId }).from(b2bClientProductsTable).where(eq(b2bClientProductsTable.b2bClientId, id));
   res.json({ ...client, discountPercent: parseFloat(client.discountPercent as string), assignedProductIds: assigned.map((r) => r.productId) });
