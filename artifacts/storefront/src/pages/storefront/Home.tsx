@@ -3,6 +3,7 @@ import { useParams, Link } from 'wouter';
 import { ShoppingCart } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useStorefront } from '@/context/StorefrontContext';
+import { getCart } from '@/lib/cart';
 
 function useStorefrontEnabled() {
   const [enabled, setEnabled] = useState<boolean | null>(null);
@@ -15,6 +16,24 @@ function useStorefrontEnabled() {
   return enabled;
 }
 
+function useCartCount(storeSlug: string): number {
+  const [count, setCount] = useState(() =>
+    storeSlug ? getCart(storeSlug).reduce((sum, i) => sum + i.quantity, 0) : 0
+  );
+
+  useEffect(() => {
+    if (!storeSlug) return;
+    const update = () => {
+      setCount(getCart(storeSlug).reduce((sum, i) => sum + i.quantity, 0));
+    };
+    update();
+    window.addEventListener('cart-updated', update);
+    return () => window.removeEventListener('cart-updated', update);
+  }, [storeSlug]);
+
+  return count;
+}
+
 export function StorefrontLayout({ children }: { children: React.ReactNode }) {
   const { storeSlug: paramSlug } = useParams();
   const { slug: contextSlug, isCustomDomain, resolving, storePath: ctxStorePath } = useStorefront();
@@ -25,6 +44,7 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
   // Convenience: build a store-relative path regardless of mode
   const sp = (p: string) => ctxStorePath(p, storeSlug);
 
+  const cartCount = useCartCount(storeSlug);
   const storefrontEnabled = useStorefrontEnabled();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: config, isLoading } = useGetStorefrontConfig(storeSlug, {
@@ -98,7 +118,11 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
           <div className="flex items-center gap-4">
             <Link href={sp('/cart')} className="relative p-2 hover:bg-accent rounded-full transition-colors">
               <ShoppingCart className="w-5 h-5" />
-              <span className="absolute top-0 right-0 w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center text-white" style={{ backgroundColor: 'var(--brand-primary)' }}>0</span>
+              {cartCount > 0 && (
+                <span className="absolute top-0 right-0 w-4 h-4 rounded-full text-[10px] font-bold flex items-center justify-center text-white" style={{ backgroundColor: 'var(--brand-primary)' }}>
+                  {cartCount > 99 ? '99+' : cartCount}
+                </span>
+              )}
             </Link>
           </div>
         </div>
