@@ -8,6 +8,7 @@ import SuperAdminStores from './pages/super-admin/Stores';
 import SuperAdminStoreForm from './pages/super-admin/StoreForm';
 import SuperAdminOrders from './pages/super-admin/Orders';
 import SuperAdminSettings from './pages/super-admin/Settings';
+import SuperAdminStoreAdmins from './pages/super-admin/StoreAdmins';
 
 // Store Admin
 import AdminLogin from './pages/admin/Login';
@@ -43,6 +44,7 @@ export function AppRoutes() {
       <Route path="/super-admin/dashboard"><SuperAdminLayout><SuperAdminDashboard /></SuperAdminLayout></Route>
       <Route path="/super-admin/stores"><SuperAdminLayout><SuperAdminStores /></SuperAdminLayout></Route>
       <Route path="/super-admin/stores/new"><SuperAdminLayout><SuperAdminStoreForm /></SuperAdminLayout></Route>
+      <Route path="/super-admin/stores/:id/admins"><SuperAdminLayout><SuperAdminStoreAdmins /></SuperAdminLayout></Route>
       <Route path="/super-admin/stores/:id"><SuperAdminLayout><SuperAdminStoreForm /></SuperAdminLayout></Route>
       <Route path="/super-admin/orders"><SuperAdminLayout><SuperAdminOrders /></SuperAdminLayout></Route>
       <Route path="/super-admin/settings"><SuperAdminLayout><SuperAdminSettings /></SuperAdminLayout></Route>

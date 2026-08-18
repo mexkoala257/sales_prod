@@ -1,7 +1,7 @@
 import { useListStores, useDeleteStore, getListStoresQueryKey } from '@workspace/api-client-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Button, Badge } from '@/components/ui';
 import { Link } from 'wouter';
-import { Plus, Edit, ExternalLink, Trash2 } from 'lucide-react';
+import { Plus, Edit, ExternalLink, Trash2, Users } from 'lucide-react';
 import { useQueryClient } from '@tanstack/react-query';
 import { format } from 'date-fns';
 
@@ -69,13 +69,16 @@ export default function SuperAdminStores() {
                 </TableCell>
                 <TableCell className="text-right">
                   <div className="flex justify-end gap-2">
-                    <Link href={`/store/${store.slug}`} target="_blank" className="text-muted-foreground hover:text-foreground">
+                    <Link href={`/store/${store.slug}`} target="_blank" className="text-muted-foreground hover:text-foreground" title="View storefront">
                       <ExternalLink className="w-4 h-4" />
                     </Link>
-                    <Link href={`/super-admin/stores/${store.id}`} className="text-muted-foreground hover:text-foreground">
+                    <Link href={`/super-admin/stores/${store.id}/admins`} className="text-muted-foreground hover:text-foreground" title="Manage admins">
+                      <Users className="w-4 h-4" />
+                    </Link>
+                    <Link href={`/super-admin/stores/${store.id}`} className="text-muted-foreground hover:text-foreground" title="Edit store">
                       <Edit className="w-4 h-4" />
                     </Link>
-                    <button onClick={() => handleDelete(store.id.toString())} className="text-muted-foreground hover:text-destructive transition-colors">
+                    <button onClick={() => handleDelete(store.id.toString())} className="text-muted-foreground hover:text-destructive transition-colors" title="Delete store">
                       <Trash2 className="w-4 h-4" />
                     </button>
                   </div>
