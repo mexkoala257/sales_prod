@@ -26,6 +26,8 @@ app.use(
   }),
 );
 app.use(cors());
+// Shopify webhooks need the raw body for HMAC verification — must come before express.json()
+app.use("/api/webhooks/shopify", express.raw({ type: "application/json" }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 

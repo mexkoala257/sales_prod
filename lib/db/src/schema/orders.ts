@@ -1,4 +1,5 @@
-import { pgTable, text, serial, timestamp, integer, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, timestamp, integer, numeric, uniqueIndex } from "drizzle-orm/pg-core";
+import { isNotNull } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -17,7 +18,10 @@ export const ordersTable = pgTable("orders", {
   notes: text("notes"),
   shopifyOrderId: text("shopify_order_id"),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => [
+  // Webhook idempotency: concurrent orders/create deliveries must not duplicate
+  uniqueIndex("orders_shopify_order_id_unique").on(t.shopifyOrderId).where(isNotNull(t.shopifyOrderId)),
+]);
 
 export const orderItemsTable = pgTable("order_items", {
   id: serial("id").primaryKey(),

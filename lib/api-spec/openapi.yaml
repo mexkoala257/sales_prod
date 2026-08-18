@@ -383,6 +383,99 @@ paths:
               schema:
                 $ref: "#/components/schemas/TestEmailResult"
 
+  /super-admin/shopify/collections:
+    get:
+      operationId: listShopifyCollections
+      tags: [super-admin]
+      summary: List Shopify collections with their store mappings
+      responses:
+        "200":
+          description: Collections list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ShopifyCollectionInfo"
+        "502":
+          description: Shopify not configured or unreachable
+
+  /super-admin/shopify/mappings:
+    put:
+      operationId: updateShopifyMappings
+      tags: [super-admin]
+      summary: Replace collection→store mappings for the submitted collections
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShopifyMappingsUpdate"
+      responses:
+        "200":
+          description: Current mapping rows
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ShopifyMappingRow"
+
+  /super-admin/shopify/sync:
+    post:
+      operationId: runShopifySync
+      tags: [super-admin]
+      summary: Run a full Shopify catalog sync now
+      responses:
+        "200":
+          description: Sync summary
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShopifySyncSummary"
+
+  /super-admin/shopify/status:
+    get:
+      operationId: getShopifySyncStatus
+      tags: [super-admin]
+      summary: Last sync status and configured interval
+      responses:
+        "200":
+          description: Sync status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShopifySyncStatus"
+
+  /storefront/{storeSlug}/shopify-checkout:
+    post:
+      operationId: createShopifyCheckout
+      tags: [storefront]
+      summary: Create a Shopify cart and return the hosted checkout URL
+      parameters:
+        - name: storeSlug
+          in: path
+          required: true
+          schema:
+            type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ShopifyCheckoutRequest"
+      responses:
+        "200":
+          description: Checkout URL
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ShopifyCheckoutResponse"
+        "400":
+          description: Items not synced with Shopify
+        "502":
+          description: Shopify error
+
   # ─── STORE ADMIN ────────────────────────────────────────
   /admin/dashboard:
     get:
@@ -1445,6 +1538,99 @@ components:
           type: ["number", "null"]
         errors:
           type: ["number", "null"]
+
+    ShopifyCollectionInfo:
+      type: object
+      required: [id, title, productCount, storeIds]
+      properties:
+        id:
+          type: string
+        title:
+          type: string
+        productCount:
+          type: number
+        storeIds:
+          type: array
+          items:
+            type: number
+
+    ShopifyMappingsUpdate:
+      type: object
+      required: [mappings]
+      properties:
+        mappings:
+          type: array
+          items:
+            type: object
+            required: [collectionId, storeIds]
+            properties:
+              collectionId:
+                type: string
+              storeIds:
+                type: array
+                items:
+                  type: number
+
+    ShopifyMappingRow:
+      type: object
+      required: [collectionId, storeId]
+      properties:
+        collectionId:
+          type: string
+        storeId:
+          type: number
+
+    ShopifySyncSummary:
+      type: object
+      required: [success, message, productsCreated, productsUpdated, errors, syncedAt]
+      properties:
+        success:
+          type: boolean
+        message:
+          type: string
+        productsCreated:
+          type: number
+        productsUpdated:
+          type: number
+        errors:
+          type: number
+        syncedAt:
+          type: string
+
+    ShopifySyncStatus:
+      type: object
+      required: [syncIntervalMinutes]
+      properties:
+        lastSyncAt:
+          type: ["string", "null"]
+        lastSyncSummary:
+          type: ["string", "null"]
+        syncIntervalMinutes:
+          type: number
+
+    ShopifyCheckoutRequest:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            type: object
+            required: [quantity]
+            properties:
+              productId:
+                type: number
+              variantId:
+                type: ["number", "null"]
+              quantity:
+                type: number
+
+    ShopifyCheckoutResponse:
+      type: object
+      required: [checkoutUrl]
+      properties:
+        checkoutUrl:
+          type: string
 
     # ── Category ──────────────────────────────────────────────
     Category:

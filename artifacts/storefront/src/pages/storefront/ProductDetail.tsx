@@ -4,6 +4,8 @@ import { StorefrontLayout } from './Home';
 import { Button } from '@/components/ui';
 import { useState } from 'react';
 import { useStorefront } from '@/context/StorefrontContext';
+import { addToCart } from '@/lib/cart';
+import { useToast } from '@/hooks/use-toast';
 
 export default function StorefrontProductDetail() {
   const { storeSlug: paramSlug, productId } = useParams();
@@ -16,6 +18,7 @@ export default function StorefrontProductDetail() {
   });
 
   const [selectedVariant, setSelectedVariant] = useState<number | null>(null);
+  const { toast } = useToast();
 
   if (isLoading) return <StorefrontLayout><div className="py-24 text-center animate-pulse">Loading product...</div></StorefrontLayout>;
   if (!product) return <StorefrontLayout><div className="py-24 text-center">Product not found.</div></StorefrontLayout>;
@@ -89,6 +92,17 @@ export default function StorefrontProductDetail() {
             <Button
               className="w-full h-14 rounded-none uppercase tracking-widest text-sm"
               style={{ backgroundColor: 'var(--brand-primary)', color: 'white' }}
+              onClick={() => {
+                addToCart(storeSlug, {
+                  productId: product.id,
+                  variantId: currentVariant?.id ?? null,
+                  name: product.name,
+                  variantLabel: currentVariant ? [currentVariant.color, currentVariant.size].filter(Boolean).join(' / ') || null : null,
+                  unitPrice: displayPrice,
+                  imageUrl: primaryImage ?? null,
+                });
+                toast({ title: 'Added to cart', description: product.name });
+              }}
             >
               Add to Cart
             </Button>

@@ -483,6 +483,78 @@ export const TestSmtpEmailResponse = zod.object({
 
 
 /**
+ * @summary List Shopify collections with their store mappings
+ */
+export const ListShopifyCollectionsResponseItem = zod.object({
+  "id": zod.string(),
+  "title": zod.string(),
+  "productCount": zod.number(),
+  "storeIds": zod.array(zod.number())
+})
+export const ListShopifyCollectionsResponse = zod.array(ListShopifyCollectionsResponseItem)
+
+
+/**
+ * @summary Replace collection→store mappings for the submitted collections
+ */
+export const UpdateShopifyMappingsBody = zod.object({
+  "mappings": zod.array(zod.object({
+  "collectionId": zod.string(),
+  "storeIds": zod.array(zod.number())
+}))
+})
+
+export const UpdateShopifyMappingsResponseItem = zod.object({
+  "collectionId": zod.string(),
+  "storeId": zod.number()
+})
+export const UpdateShopifyMappingsResponse = zod.array(UpdateShopifyMappingsResponseItem)
+
+
+/**
+ * @summary Run a full Shopify catalog sync now
+ */
+export const RunShopifySyncResponse = zod.object({
+  "success": zod.boolean(),
+  "message": zod.string(),
+  "productsCreated": zod.number(),
+  "productsUpdated": zod.number(),
+  "errors": zod.number(),
+  "syncedAt": zod.string()
+})
+
+
+/**
+ * @summary Last sync status and configured interval
+ */
+export const GetShopifySyncStatusResponse = zod.object({
+  "lastSyncAt": zod.string().nullish(),
+  "lastSyncSummary": zod.string().nullish(),
+  "syncIntervalMinutes": zod.number()
+})
+
+
+/**
+ * @summary Create a Shopify cart and return the hosted checkout URL
+ */
+export const CreateShopifyCheckoutParams = zod.object({
+  "storeSlug": zod.coerce.string()
+})
+
+export const CreateShopifyCheckoutBody = zod.object({
+  "items": zod.array(zod.object({
+  "productId": zod.number().optional(),
+  "variantId": zod.number().nullish(),
+  "quantity": zod.number()
+}))
+})
+
+export const CreateShopifyCheckoutResponse = zod.object({
+  "checkoutUrl": zod.string()
+})
+
+
+/**
  * @summary Store admin dashboard summary
  */
 export const GetStoreDashboardResponse = zod.object({

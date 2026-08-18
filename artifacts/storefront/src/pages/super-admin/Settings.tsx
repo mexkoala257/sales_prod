@@ -1,8 +1,12 @@
 import React, { useEffect, useState } from 'react';
-import { useGetPlatformSettings, useUpdatePlatformSettings, useTestSmtpEmail } from '@workspace/api-client-react';
+import {
+  useGetPlatformSettings, useUpdatePlatformSettings, useTestSmtpEmail,
+  useListShopifyCollections, useUpdateShopifyMappings, useRunShopifySync, useGetShopifySyncStatus,
+  useListStores,
+} from '@workspace/api-client-react';
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from '@/components/ui';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Save, Send, Settings as SettingsIcon } from 'lucide-react';
+import { Eye, EyeOff, Save, Send, Settings as SettingsIcon, RefreshCw, Store } from 'lucide-react';
 import type { PlatformSetting } from '@workspace/api-client-react';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -117,6 +121,130 @@ function SectionCard({ title, description, children, onSave, saving, footer }: S
             {saving ? 'Saving…' : 'Save'}
           </Button>
           {footer}
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Shopify sync & collection mapping ────────────────────────────────────────
+
+function ShopifySyncCard() {
+  const { toast } = useToast();
+  const { data: status, refetch: refetchStatus } = useGetShopifySyncStatus();
+  const { data: collections, isLoading: loadingCollections, error: collectionsError, refetch: refetchCollections } = useListShopifyCollections();
+  const { data: stores } = useListStores();
+  const updateMappings = useUpdateShopifyMappings();
+  const runSync = useRunShopifySync();
+
+  // collectionId -> selected storeIds (local edits)
+  const [selection, setSelection] = useState<Record<string, number[]>>({});
+
+  useEffect(() => {
+    if (collections) {
+      setSelection(Object.fromEntries(collections.map((c) => [c.id, c.storeIds])));
+    }
+  }, [collections]);
+
+  const toggle = (collectionId: string, storeId: number) => {
+    setSelection((prev) => {
+      const current = prev[collectionId] ?? [];
+      const next = current.includes(storeId) ? current.filter((s) => s !== storeId) : [...current, storeId];
+      return { ...prev, [collectionId]: next };
+    });
+  };
+
+  const saveMappings = async () => {
+    try {
+      await updateMappings.mutateAsync({
+        data: { mappings: Object.entries(selection).map(([collectionId, storeIds]) => ({ collectionId, storeIds })) },
+      });
+      toast({ title: 'Saved', description: 'Collection mappings updated.' });
+      refetchCollections();
+    } catch (err: unknown) {
+      toast({ title: 'Save failed', description: (err as Error).message, variant: 'destructive' });
+    }
+  };
+
+  const handleSync = async () => {
+    try {
+      const result = await runSync.mutateAsync();
+      toast({
+        title: result.success ? 'Sync complete' : 'Sync failed',
+        description: result.message,
+        variant: result.success ? 'default' : 'destructive',
+      });
+      refetchStatus();
+    } catch (err: unknown) {
+      toast({ title: 'Sync failed', description: (err as Error).message, variant: 'destructive' });
+    }
+  };
+
+  return (
+    <Card>
+      <CardHeader className="pb-4">
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <Store className="h-4 w-4" />
+          Shopify Collections → Storefronts
+        </CardTitle>
+        <CardDescription>
+          Map each Shopify collection to the storefronts that should carry its products, then run a sync.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        {collectionsError ? (
+          <p className="text-sm text-destructive">
+            {(collectionsError as Error)?.message || 'Could not load collections. Check the Shopify credentials above.'}
+          </p>
+        ) : loadingCollections ? (
+          <p className="text-sm text-muted-foreground animate-pulse">Loading collections from Shopify…</p>
+        ) : !collections || collections.length === 0 ? (
+          <p className="text-sm text-muted-foreground">No collections found in the connected Shopify store.</p>
+        ) : (
+          <div className="space-y-3">
+            {collections.map((c) => (
+              <div key={c.id} className="border p-3 space-y-2">
+                <div className="flex items-baseline justify-between">
+                  <p className="text-sm font-medium">{c.title}</p>
+                  <span className="text-xs text-muted-foreground font-mono">{c.productCount} products</span>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  {(stores ?? []).map((s) => {
+                    const active = (selection[c.id] ?? []).includes(s.id);
+                    return (
+                      <button
+                        key={s.id}
+                        type="button"
+                        onClick={() => toggle(c.id, s.id)}
+                        className={`px-2.5 py-1 text-xs border transition-colors ${
+                          active ? 'border-zinc-900 bg-zinc-900 text-white' : 'border-zinc-300 hover:border-zinc-500'
+                        }`}
+                      >
+                        {s.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <div className="flex items-center gap-3 pt-2 border-t">
+          <Button size="sm" onClick={saveMappings} disabled={updateMappings.isPending || !collections?.length}>
+            <Save className="h-3.5 w-3.5 mr-1.5" />
+            {updateMappings.isPending ? 'Saving…' : 'Save Mappings'}
+          </Button>
+          <Button size="sm" variant="outline" onClick={handleSync} disabled={runSync.isPending}>
+            <RefreshCw className={`h-3.5 w-3.5 mr-1.5 ${runSync.isPending ? 'animate-spin' : ''}`} />
+            {runSync.isPending ? 'Syncing…' : 'Sync Now'}
+          </Button>
+          {status?.lastSyncAt && (
+            <span className="text-xs text-muted-foreground">
+              Last sync: {new Date(status.lastSyncAt).toLocaleString()}
+              {status.lastSyncSummary ? ` — ${status.lastSyncSummary}` : ''}
+            </span>
+          )}
         </div>
       </CardContent>
     </Card>
@@ -248,6 +376,39 @@ export default function SuperAdminSettings() {
           onChange={set('objectStoragePublicPaths')}
         />
       </SectionCard>
+
+      {/* Shopify */}
+      <SectionCard
+        title="Shopify"
+        description="Shopify store connection for catalog sync, B2C hosted checkout, and B2B order push."
+        onSave={() => saveSection('Shopify', [
+          { key: 'shopifyStoreUrl' },
+          { key: 'shopifyAdminToken', isSecret: true },
+          { key: 'shopifyStorefrontToken' },
+          { key: 'shopifyWebhookSecret', isSecret: true },
+          { key: 'shopifySyncIntervalMinutes' },
+        ])}
+        saving={savingSection === 'Shopify'}
+      >
+        <SettingField id="shopifyStoreUrl" label="Store URL" placeholder="my-shop.myshopify.com"
+          description="Your Shopify store domain."
+          value={values['shopifyStoreUrl'] ?? ''} onChange={set('shopifyStoreUrl')} />
+        <SettingField id="shopifyAdminToken" label="Admin API Access Token" isSecret
+          description="Used for catalog sync and pushing B2B draft orders."
+          value={values['shopifyAdminToken'] ?? ''} onChange={set('shopifyAdminToken')} />
+        <SettingField id="shopifyStorefrontToken" label="Storefront API Public Token"
+          description="Public access token used to create B2C checkout carts."
+          value={values['shopifyStorefrontToken'] ?? ''} onChange={set('shopifyStorefrontToken')} />
+        <SettingField id="shopifyWebhookSecret" label="Webhook Signing Secret" isSecret
+          description="From your Shopify app's webhook settings; verifies orders/create webhooks."
+          value={values['shopifyWebhookSecret'] ?? ''} onChange={set('shopifyWebhookSecret')} />
+        <SettingField id="shopifySyncIntervalMinutes" label="Background Sync Interval (minutes)" placeholder="60"
+          type="number" description="How often the catalog is synced automatically. Minimum 5."
+          value={values['shopifySyncIntervalMinutes'] ?? ''} onChange={set('shopifySyncIntervalMinutes')} />
+      </SectionCard>
+
+      {/* Shopify collection mapping + sync */}
+      <ShopifySyncCard />
 
       {/* Email / SMTP */}
       <SectionCard

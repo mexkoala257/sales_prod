@@ -16,6 +16,7 @@ import { requireB2BClient } from "../middlewares/auth";
 import type { JwtPayload } from "../middlewares/auth";
 import { CreateB2BOrderBody } from "@workspace/api-zod";
 import { getSetting } from "../lib/settings";
+import { pushOrderToShopify } from "../lib/shopify";
 
 const router: IRouter = Router();
 
@@ -242,6 +243,10 @@ router.post("/b2b/orders", requireB2BClient, async (req, res): Promise<void> => 
     );
     await db.insert(orderItemsTable).values(orderItemValues);
   }
+
+  // Fire-and-forget: push to Shopify as a draft order for fulfillment tracking.
+  // Never blocks or fails the local order save.
+  void pushOrderToShopify(order.id);
 
   const orderItems = await db.select().from(orderItemsTable).where(eq(orderItemsTable.orderId, order.id));
   res.status(201).json({

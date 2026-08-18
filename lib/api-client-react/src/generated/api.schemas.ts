@@ -330,6 +330,59 @@ export interface ShopifySyncResult {
   errors?: number | null;
 }
 
+export interface ShopifyCollectionInfo {
+  id: string;
+  title: string;
+  productCount: number;
+  storeIds: number[];
+}
+
+export type ShopifyMappingsUpdateMappingsItem = {
+  collectionId: string;
+  storeIds: number[];
+};
+
+export interface ShopifyMappingsUpdate {
+  mappings: ShopifyMappingsUpdateMappingsItem[];
+}
+
+export interface ShopifyMappingRow {
+  collectionId: string;
+  storeId: number;
+}
+
+export interface ShopifySyncSummary {
+  success: boolean;
+  message: string;
+  productsCreated: number;
+  productsUpdated: number;
+  errors: number;
+  syncedAt: string;
+}
+
+export interface ShopifySyncStatus {
+  /** @nullable */
+  lastSyncAt?: string | null;
+  /** @nullable */
+  lastSyncSummary?: string | null;
+  syncIntervalMinutes: number;
+}
+
+export type ShopifyCheckoutRequestItemsItem = {
+  productId?: number;
+  /** @nullable */
+  variantId?: number | null;
+  quantity: number;
+};
+
+export interface ShopifyCheckoutRequest {
+  items: ShopifyCheckoutRequestItemsItem[];
+}
+
+export interface ShopifyCheckoutResponse {
+  checkoutUrl: string;
+}
+
 export interface Category {
   id: number;
   storeId: number;

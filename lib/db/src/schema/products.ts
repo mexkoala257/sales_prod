@@ -26,7 +26,15 @@ export const productVariantsTable = pgTable("product_variants", {
   sku: text("sku").notNull(),
   inventory: integer("inventory").notNull().default(0),
   price: numeric("price", { precision: 10, scale: 2 }),
+  shopifyVariantId: text("shopify_variant_id"),
 });
+
+// Maps a Shopify collection to one or more platform stores.
+// Products in that collection are synced into every mapped store.
+export const shopifyCollectionStoreMappingsTable = pgTable("shopify_collection_store_mappings", {
+  collectionId: text("collection_id").notNull(),
+  storeId: integer("store_id").notNull(),
+}, (table) => [primaryKey({ columns: [table.collectionId, table.storeId] })]);
 
 export const productImagesTable = pgTable("product_images", {
   id: serial("id").primaryKey(),

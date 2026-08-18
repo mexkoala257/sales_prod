@@ -242,6 +242,32 @@ no further action is needed after the initial setup.
 
 ---
 
+## Shopify Integration Setup
+
+Configure Shopify in **Super Admin → Settings → Shopify**:
+
+1. **Store URL** — your `*.myshopify.com` domain.
+2. **Admin API Access Token** — from a Shopify custom app (Settings → Apps → Develop apps) with `read_products`, `read_collections` (for catalog sync) and `write_draft_orders` (for B2B order push) scopes.
+3. **Storefront API Public Token** — from the same app's Storefront API section, with `unauthenticated_read_product_listings` and `unauthenticated_write_checkouts` scopes. Used to create B2C checkout carts.
+4. **Webhook Signing Secret** — see below.
+5. Map Shopify collections to storefronts in the "Shopify Collections → Storefronts" card, then click **Sync Now**. Background sync re-runs automatically at the configured interval.
+
+### Registering the orders/create webhook
+
+So the platform records B2C orders after Shopify checkout completes:
+
+1. In Shopify admin go to **Settings → Notifications → Webhooks** (or your custom app's webhook config).
+2. Create a webhook for the **Order creation** event, format JSON, pointing at:
+   ```
+   https://<your-platform-domain>/api/webhooks/shopify/orders-create
+   ```
+3. Copy the **webhook signing secret** Shopify shows (bottom of the Webhooks page) and paste it into **Super Admin → Settings → Shopify → Webhook Signing Secret**. Requests with an invalid HMAC signature are rejected with 401.
+4. Test with "Send test notification" — the API logs a warning if the signature doesn't match, and records the order when it does. Orders that don't contain any synced platform product are skipped (logged).
+
+If webhooks can't reach your server (e.g. during local development), completed Shopify orders simply won't appear in the platform; sync and checkout still work.
+
+---
+
 ## Feature Availability on VPS
 
 | Feature | Available | Notes |

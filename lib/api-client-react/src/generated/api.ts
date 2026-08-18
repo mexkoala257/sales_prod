@@ -46,7 +46,14 @@ import type {
   ProductUpdate,
   ResolveStorefrontByDomainParams,
   RetailOrderInput,
+  ShopifyCheckoutRequest,
+  ShopifyCheckoutResponse,
+  ShopifyCollectionInfo,
+  ShopifyMappingRow,
+  ShopifyMappingsUpdate,
   ShopifySyncResult,
+  ShopifySyncStatus,
+  ShopifySyncSummary,
   Store,
   StoreDashboard,
   StoreInput,
@@ -1554,6 +1561,374 @@ export const useTestSmtpEmail = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getTestSmtpEmailMutationOptions(options));
+    }
+
+export const getListShopifyCollectionsUrl = () => {
+
+
+
+
+  return `/api/super-admin/shopify/collections`
+}
+
+/**
+ * @summary List Shopify collections with their store mappings
+ */
+export const listShopifyCollections = async ( options?: Parameters<typeof customFetch>[1]): Promise<ShopifyCollectionInfo[]> => {
+
+  return customFetch<ShopifyCollectionInfo[]>(getListShopifyCollectionsUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getListShopifyCollectionsQueryKey = () => {
+    return [
+    `/api/super-admin/shopify/collections`
+    ] as const;
+    }
+
+
+export const getListShopifyCollectionsQueryOptions = <TData = Awaited<ReturnType<typeof listShopifyCollections>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listShopifyCollections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getListShopifyCollectionsQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof listShopifyCollections>>> = ({ signal }) => listShopifyCollections({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof listShopifyCollections>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type ListShopifyCollectionsQueryResult = NonNullable<Awaited<ReturnType<typeof listShopifyCollections>>>
+export type ListShopifyCollectionsQueryError = ErrorType<void>
+
+
+/**
+ * @summary List Shopify collections with their store mappings
+ */
+
+export function useListShopifyCollections<TData = Awaited<ReturnType<typeof listShopifyCollections>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof listShopifyCollections>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getListShopifyCollectionsQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateShopifyMappingsUrl = () => {
+
+
+
+
+  return `/api/super-admin/shopify/mappings`
+}
+
+/**
+ * @summary Replace collection→store mappings for the submitted collections
+ */
+export const updateShopifyMappings = async (shopifyMappingsUpdate: ShopifyMappingsUpdate, options?: Parameters<typeof customFetch>[1]): Promise<ShopifyMappingRow[]> => {
+
+  return customFetch<ShopifyMappingRow[]>(getUpdateShopifyMappingsUrl(),
+  {
+    ...options,
+    method: 'PUT',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(shopifyMappingsUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateShopifyMappingsMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateShopifyMappings>>, TError,{data: BodyType<ShopifyMappingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateShopifyMappings>>, TError,{data: BodyType<ShopifyMappingsUpdate>}, TContext> => {
+
+const mutationKey = ['updateShopifyMappings'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateShopifyMappings>>, {data: BodyType<ShopifyMappingsUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateShopifyMappings(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateShopifyMappingsMutationResult = NonNullable<Awaited<ReturnType<typeof updateShopifyMappings>>>
+    export type UpdateShopifyMappingsMutationBody = BodyType<ShopifyMappingsUpdate>
+    export type UpdateShopifyMappingsMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Replace collection→store mappings for the submitted collections
+ */
+export const useUpdateShopifyMappings = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateShopifyMappings>>, TError,{data: BodyType<ShopifyMappingsUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateShopifyMappings>>,
+        TError,
+        {data: BodyType<ShopifyMappingsUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateShopifyMappingsMutationOptions(options));
+    }
+
+export const getRunShopifySyncUrl = () => {
+
+
+
+
+  return `/api/super-admin/shopify/sync`
+}
+
+/**
+ * @summary Run a full Shopify catalog sync now
+ */
+export const runShopifySync = async ( options?: Parameters<typeof customFetch>[1]): Promise<ShopifySyncSummary> => {
+
+  return customFetch<ShopifySyncSummary>(getRunShopifySyncUrl(),
+  {
+    ...options,
+    method: 'POST'
+
+
+  }
+);}
+
+
+
+
+
+export const getRunShopifySyncMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runShopifySync>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof runShopifySync>>, TError,void, TContext> => {
+
+const mutationKey = ['runShopifySync'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof runShopifySync>>, void> = () => {
+
+
+          return  runShopifySync(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type RunShopifySyncMutationResult = NonNullable<Awaited<ReturnType<typeof runShopifySync>>>
+
+    export type RunShopifySyncMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Run a full Shopify catalog sync now
+ */
+export const useRunShopifySync = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof runShopifySync>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof runShopifySync>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getRunShopifySyncMutationOptions(options));
+    }
+
+export const getGetShopifySyncStatusUrl = () => {
+
+
+
+
+  return `/api/super-admin/shopify/status`
+}
+
+/**
+ * @summary Last sync status and configured interval
+ */
+export const getShopifySyncStatus = async ( options?: Parameters<typeof customFetch>[1]): Promise<ShopifySyncStatus> => {
+
+  return customFetch<ShopifySyncStatus>(getGetShopifySyncStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetShopifySyncStatusQueryKey = () => {
+    return [
+    `/api/super-admin/shopify/status`
+    ] as const;
+    }
+
+
+export const getGetShopifySyncStatusQueryOptions = <TData = Awaited<ReturnType<typeof getShopifySyncStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getShopifySyncStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetShopifySyncStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getShopifySyncStatus>>> = ({ signal }) => getShopifySyncStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getShopifySyncStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetShopifySyncStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getShopifySyncStatus>>>
+export type GetShopifySyncStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Last sync status and configured interval
+ */
+
+export function useGetShopifySyncStatus<TData = Awaited<ReturnType<typeof getShopifySyncStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getShopifySyncStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetShopifySyncStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getCreateShopifyCheckoutUrl = (storeSlug: string,) => {
+
+
+
+
+  return `/api/storefront/${storeSlug}/shopify-checkout`
+}
+
+/**
+ * @summary Create a Shopify cart and return the hosted checkout URL
+ */
+export const createShopifyCheckout = async (storeSlug: string,
+    shopifyCheckoutRequest: ShopifyCheckoutRequest, options?: Parameters<typeof customFetch>[1]): Promise<ShopifyCheckoutResponse> => {
+
+  return customFetch<ShopifyCheckoutResponse>(getCreateShopifyCheckoutUrl(storeSlug),
+  {
+    ...options,
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(shopifyCheckoutRequest)
+  }
+);}
+
+
+
+
+
+export const getCreateShopifyCheckoutMutationOptions = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createShopifyCheckout>>, TError,{storeSlug: string;data: BodyType<ShopifyCheckoutRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof createShopifyCheckout>>, TError,{storeSlug: string;data: BodyType<ShopifyCheckoutRequest>}, TContext> => {
+
+const mutationKey = ['createShopifyCheckout'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof createShopifyCheckout>>, {storeSlug: string;data: BodyType<ShopifyCheckoutRequest>}> = (props) => {
+          const {storeSlug,data} = props ?? {};
+
+          return  createShopifyCheckout(storeSlug,data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type CreateShopifyCheckoutMutationResult = NonNullable<Awaited<ReturnType<typeof createShopifyCheckout>>>
+    export type CreateShopifyCheckoutMutationBody = BodyType<ShopifyCheckoutRequest>
+    export type CreateShopifyCheckoutMutationError = ErrorType<void>
+
+    /**
+ * @summary Create a Shopify cart and return the hosted checkout URL
+ */
+export const useCreateShopifyCheckout = <TError = ErrorType<void>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof createShopifyCheckout>>, TError,{storeSlug: string;data: BodyType<ShopifyCheckoutRequest>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof createShopifyCheckout>>,
+        TError,
+        {storeSlug: string;data: BodyType<ShopifyCheckoutRequest>},
+        TContext
+      > => {
+      return useMutation(getCreateShopifyCheckoutMutationOptions(options));
     }
 
 export const getGetStoreDashboardUrl = () => {
