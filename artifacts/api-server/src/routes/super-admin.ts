@@ -17,7 +17,9 @@ import {
   CreateStoreAdminBody,
   UpdateOrderStatusSuperAdminBody,
 } from "@workspace/api-zod";
-import { getAllSettings, upsertSettings } from "../lib/settings";
+import { getAllSettings, upsertSettings, getSetting } from "../lib/settings";
+import nodemailer from "nodemailer";
+import type { JwtPayload } from "../middlewares/auth";
 
 const router: IRouter = Router();
 
@@ -253,14 +255,53 @@ router.put("/super-admin/settings", requireSuperAdmin, async (req, res): Promise
   res.json(updated);
 });
 
-router.post("/super-admin/settings/test-email", requireSuperAdmin, async (_req, res): Promise<void> => {
-  // Real SMTP sending is tracked in Task #8 (install nodemailer and wire credentials).
-  // Until that task is complete this endpoint intentionally returns success:false so the
-  // UI never implies a real message was delivered.
-  res.json({
-    success: false,
-    message: "SMTP test sending is not yet implemented. Configure your SMTP settings and check back after Task #8 is complete.",
-  });
+router.post("/super-admin/settings/test-email", requireSuperAdmin, async (req, res): Promise<void> => {
+  const user = (req as any).user as JwtPayload;
+
+  const [smtpHost, smtpPort, smtpUser, smtpPassword, smtpFromAddress] = await Promise.all([
+    getSetting("smtpHost"),
+    getSetting("smtpPort"),
+    getSetting("smtpUser"),
+    getSetting("smtpPassword"),
+    getSetting("smtpFromAddress"),
+  ]);
+
+  if (!smtpHost || !smtpPort || !smtpFromAddress) {
+    res.json({
+      success: false,
+      message: "SMTP is not fully configured. Please set at least Host, Port, and From Address before sending a test email.",
+    });
+    return;
+  }
+
+  try {
+    const transporter = nodemailer.createTransport({
+      host: smtpHost,
+      port: parseInt(smtpPort, 10),
+      secure: parseInt(smtpPort, 10) === 465,
+      auth: smtpUser && smtpPassword
+        ? { user: smtpUser, pass: smtpPassword }
+        : undefined,
+    });
+
+    await transporter.sendMail({
+      from: smtpFromAddress,
+      to: user.email,
+      subject: "SMTP Test – Platform Settings",
+      text: `This is a test email sent from the platform SMTP configuration.\n\nIf you received this, your SMTP settings are working correctly.\n\nSMTP Host: ${smtpHost}\nPort: ${smtpPort}\nFrom: ${smtpFromAddress}`,
+    });
+
+    res.json({
+      success: true,
+      message: `Test email delivered successfully to ${user.email}.`,
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : String(err);
+    res.json({
+      success: false,
+      message: `SMTP error: ${message}`,
+    });
+  }
 });
 
 export default router;
