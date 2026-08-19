@@ -483,9 +483,11 @@ export const TestSmtpEmailResponse = zod.object({
 
 
 /**
- * @summary Redirect browser to Shopify's OAuth authorization page
+ * @summary Return Shopify OAuth authorization URL (frontend must navigate there)
  */
-export const StartShopifyOAuthResponse = zod.void()
+export const StartShopifyOAuthResponse = zod.object({
+  "url": zod.string().describe('Full Shopify authorization URL including CSRF state')
+})
 
 
 /**

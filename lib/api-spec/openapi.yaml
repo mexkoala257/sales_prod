@@ -387,10 +387,19 @@ paths:
     get:
       operationId: startShopifyOAuth
       tags: [super-admin]
-      summary: Redirect browser to Shopify's OAuth authorization page
+      summary: Return Shopify OAuth authorization URL (frontend must navigate there)
       responses:
-        "302":
-          description: Redirect to Shopify
+        "200":
+          description: Authorization URL to redirect the user to
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [url]
+                properties:
+                  url:
+                    type: string
+                    description: Full Shopify authorization URL including CSRF state
         "400":
           description: Store URL or Client ID not configured
 

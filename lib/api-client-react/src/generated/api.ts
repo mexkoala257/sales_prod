@@ -56,6 +56,7 @@ import type {
   ShopifySyncResult,
   ShopifySyncStatus,
   ShopifySyncSummary,
+  StartShopifyOAuth200,
   Store,
   StoreDashboard,
   StoreInput,
@@ -1574,11 +1575,11 @@ export const getStartShopifyOAuthUrl = () => {
 }
 
 /**
- * @summary Redirect browser to Shopify's OAuth authorization page
+ * @summary Return Shopify OAuth authorization URL (frontend must navigate there)
  */
-export const startShopifyOAuth = async ( options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+export const startShopifyOAuth = async ( options?: Parameters<typeof customFetch>[1]): Promise<StartShopifyOAuth200> => {
 
-  return customFetch<unknown>(getStartShopifyOAuthUrl(),
+  return customFetch<StartShopifyOAuth200>(getStartShopifyOAuthUrl(),
   {
     ...options,
     method: 'GET'
@@ -1621,7 +1622,7 @@ export type StartShopifyOAuthQueryError = ErrorType<void>
 
 
 /**
- * @summary Redirect browser to Shopify's OAuth authorization page
+ * @summary Return Shopify OAuth authorization URL (frontend must navigate there)
  */
 
 export function useStartShopifyOAuth<TData = Awaited<ReturnType<typeof startShopifyOAuth>>, TError = ErrorType<void>>(

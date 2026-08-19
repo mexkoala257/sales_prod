@@ -86,7 +86,9 @@ router.get("/super-admin/shopify/oauth/start", requireSuperAdmin, async (req: Re
   authUrl.searchParams.set("state", state);
 
   logger.info({ shop, redirectUri }, "Shopify OAuth: starting authorization flow");
-  res.redirect(authUrl.toString());
+  // Return the URL as JSON so the frontend can navigate with its auth header
+  // (direct browser navigation can't attach the JWT).
+  res.json({ url: authUrl.toString() });
 });
 
 // ── Step 2: OAuth callback ────────────────────────────────────────────────────

@@ -713,6 +713,11 @@ export interface TestEmailResult {
   message: string;
 }
 
+export type StartShopifyOAuth200 = {
+  /** Full Shopify authorization URL including CSRF state */
+  url: string;
+};
+
 export type DisconnectShopifyOAuth200 = {
   disconnected: boolean;
 };

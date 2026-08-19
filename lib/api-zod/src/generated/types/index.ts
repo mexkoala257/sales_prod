@@ -67,6 +67,7 @@ export * from './shopifyOAuthStatus';
 export * from './shopifySyncResult';
 export * from './shopifySyncStatus';
 export * from './shopifySyncSummary';
+export * from './startShopifyOAuth200';
 export * from './store';
 export * from './storeAnalyticsSummary';
 export * from './storeDashboard';

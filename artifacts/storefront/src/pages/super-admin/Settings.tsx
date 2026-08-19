@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import {
   useGetPlatformSettings, useUpdatePlatformSettings, useTestSmtpEmail,
   useListShopifyCollections, useUpdateShopifyMappings, useRunShopifySync, useGetShopifySyncStatus,
-  useGetShopifyOAuthStatus, useDisconnectShopifyOAuth,
+  startShopifyOAuth, useGetShopifyOAuthStatus, useDisconnectShopifyOAuth,
   useListStores,
 } from '@workspace/api-client-react';
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from '@/components/ui';
@@ -144,6 +144,7 @@ function ShopifyConnectionCard({
   const params = new URLSearchParams(search);
   const oauthResult = params.get('shopify');
 
+  const [connecting, setConnecting] = useState(false);
   const { data: oauthStatus, refetch: refetchStatus } = useGetShopifyOAuthStatus();
   const disconnect = useDisconnectShopifyOAuth();
 
@@ -158,6 +159,17 @@ function ShopifyConnectionCard({
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [oauthResult]);
+
+  const handleConnect = async () => {
+    setConnecting(true);
+    try {
+      const result = await startShopifyOAuth() as { url: string };
+      window.location.href = result.url;
+    } catch {
+      toast({ title: 'Could not start Shopify connection', description: 'Check that Store URL and Client ID are saved, then try again.', variant: 'destructive' });
+      setConnecting(false);
+    }
+  };
 
   const handleDisconnect = async () => {
     await disconnect.mutateAsync();
@@ -235,12 +247,12 @@ function ShopifyConnectionCard({
             <Save className="h-3.5 w-3.5 mr-1.5" />
             {savingSection === 'Shopify credentials' ? 'Saving…' : 'Save credentials'}
           </Button>
-          <a href="/api/super-admin/shopify/oauth/start">
-            <Button size="sm" disabled={!values['shopifyStoreUrl'] || !values['shopifyClientId']}>
-              <Link2 className="h-3.5 w-3.5 mr-1.5" />
-              {connected ? 'Re-connect Shopify' : 'Connect Shopify'}
-            </Button>
-          </a>
+          <Button size="sm"
+            disabled={!values['shopifyStoreUrl'] || !values['shopifyClientId'] || connecting}
+            onClick={handleConnect}>
+            <Link2 className="h-3.5 w-3.5 mr-1.5" />
+            {connecting ? 'Redirecting…' : connected ? 'Re-connect Shopify' : 'Connect Shopify'}
+          </Button>
         </div>
 
         {/* Step 2: Redirect URI to register */}
