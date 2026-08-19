@@ -1,9 +1,10 @@
-import { useGetStorefrontConfig, useListStorefrontProducts } from '@workspace/api-client-react';
+import { useGetStorefrontConfig, useListStorefrontCategories, useListStorefrontProducts } from '@workspace/api-client-react';
 import { useParams, Link } from 'wouter';
-import { Menu, ShoppingBag, X, ArrowUpRight } from 'lucide-react';
+import { Menu, Search, ShoppingBag, X, ArrowUpRight } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useStorefront } from '@/context/StorefrontContext';
 import { useCartCount } from '@/lib/useCartCount';
+import { StorefrontImage } from '@/components/storefront-image';
 
 function useStorefrontEnabled() {
   const [enabled, setEnabled] = useState<boolean | null>(null);
@@ -20,14 +21,6 @@ function productPrice(value: number) {
   return value.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
 }
 
-function ProductImage({ src, alt }: { src?: string | null; alt: string }) {
-  const [failed, setFailed] = useState(false);
-  if (!src || failed) {
-    return <div className="storefront-image-placeholder">No image</div>;
-  }
-  return <img src={src} alt={alt} onError={() => setFailed(true)} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.035]" />;
-}
-
 export function StorefrontLayout({ children }: { children: React.ReactNode }) {
   const { storeSlug: paramSlug } = useParams();
   const { slug: contextSlug, isCustomDomain, resolving, storePath: ctxStorePath } = useStorefront();
@@ -38,6 +31,8 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: config, isLoading } = useGetStorefrontConfig(storeSlug, { query: { enabled: !!storeSlug && storefrontEnabled !== false } as any });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: categories } = useListStorefrontCategories(storeSlug, { query: { enabled: !!storeSlug && storefrontEnabled !== false } as any });
 
   useEffect(() => {
     if (!config) return;
@@ -84,14 +79,16 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
 
   if (!config) return <div className="min-h-screen grid place-items-center text-sm">Store not found.</div>;
   const shopLabel = config.shopNavigationLabel || 'Shop';
+  const navigationCategories = categories?.slice(0, 3) || [];
+  const promoMessage = config.announcementBar || 'Curated goods · Secure Shopify checkout';
 
   return (
     <div className="min-h-[100dvh] bg-[#fcfcfa] text-stone-900" style={{ fontFamily: 'var(--brand-font)' }}>
-      {config.announcementBar && (
-        <div className="bg-[var(--brand-primary)] px-4 py-2.5 text-center text-[10px] font-semibold uppercase tracking-[0.18em] text-white sm:text-xs">
-          {config.announcementBar}
-        </div>
-      )}
+      <div className="bg-[var(--brand-primary)] px-4 py-2 text-center text-[9px] font-semibold uppercase tracking-[0.16em] text-white sm:text-[10px]">
+        <span>{promoMessage}</span>
+        <span className="mx-3 hidden opacity-60 sm:inline">•</span>
+        <span className="hidden sm:inline">Independent stores, thoughtfully stocked</span>
+      </div>
       <header className="sticky top-0 z-50 border-b border-stone-200/80 bg-[#fcfcfa]/95 backdrop-blur">
         <div className="mx-auto flex h-[76px] max-w-[1440px] items-center justify-between px-5 md:px-8">
           <Link href={sp('/')} className="z-10 flex min-w-0 items-center gap-3" onClick={() => setMobileMenuOpen(false)}>
@@ -101,11 +98,12 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
               <span className="truncate text-xl font-semibold tracking-[-0.05em] sm:text-2xl">{config.logoText || config.name}</span>
             )}
           </Link>
-          <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-8 md:flex">
+          <nav className="absolute left-1/2 hidden -translate-x-1/2 items-center gap-6 lg:flex">
             <Link href={sp('/products')} className="text-xs font-semibold uppercase tracking-[0.16em] transition-opacity hover:opacity-50">{shopLabel}</Link>
-            <Link href={sp('/')} className="text-xs font-semibold uppercase tracking-[0.16em] transition-opacity hover:opacity-50">New arrivals</Link>
+            {navigationCategories.map((category) => <a key={category.id} href={sp(`/products?category=${category.id}`)} className="text-xs font-medium uppercase tracking-[0.13em] text-stone-600 transition-colors hover:text-stone-950">{category.name}</a>)}
           </nav>
           <div className="flex items-center gap-1">
+            <Link href={sp('/products?focus=search')} className="hidden h-10 items-center gap-2 px-3 text-[10px] font-bold uppercase tracking-[0.14em] transition-colors hover:bg-stone-100 sm:flex" aria-label="Search the catalog"><Search className="h-[17px] w-[17px]" strokeWidth={1.7} /><span className="hidden xl:inline">Search</span></Link>
             <Link href={sp('/cart')} className="relative grid h-10 w-10 place-items-center transition-colors hover:bg-stone-100" aria-label={`Cart, ${cartCount} item${cartCount === 1 ? '' : 's'}`}>
               <ShoppingBag className="h-[18px] w-[18px]" strokeWidth={1.7} />
               {cartCount > 0 && <span className="absolute right-0 top-0 grid h-4 min-w-4 place-items-center bg-[var(--brand-primary)] px-1 text-[9px] font-bold text-white">{cartCount > 99 ? '99+' : cartCount}</span>}
@@ -119,7 +117,7 @@ export function StorefrontLayout({ children }: { children: React.ReactNode }) {
           <nav className="border-t border-stone-200 bg-[#fcfcfa] px-5 py-5 md:hidden">
             <div className="grid gap-4">
               <Link href={sp('/products')} onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium">{shopLabel}</Link>
-              <Link href={sp('/')} onClick={() => setMobileMenuOpen(false)} className="text-sm font-medium">New arrivals</Link>
+              {navigationCategories.length > 0 && <div className="border-t border-stone-200 pt-4"><p className="mb-3 text-[10px] font-bold uppercase tracking-[0.17em] text-stone-400">Shop by category</p><div className="grid gap-3">{navigationCategories.map((category) => <a key={category.id} href={sp(`/products?category=${category.id}`)} onClick={() => setMobileMenuOpen(false)} className="text-sm text-stone-600">{category.name}</a>)}</div></div>}
             </div>
           </nav>
         )}
@@ -145,12 +143,32 @@ export default function StorefrontHome() {
   const { data: config } = useGetStorefrontConfig(storeSlug, { query: { enabled: !!storeSlug } as any });
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: products, isLoading } = useListStorefrontProducts(storeSlug, { query: { enabled: !!storeSlug } as any });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: categories } = useListStorefrontCategories(storeSlug, { query: { enabled: !!storeSlug } as any });
   const [heroImageFailed, setHeroImageFailed] = useState(false);
   useEffect(() => setHeroImageFailed(false), [config?.heroImageUrl]);
   const featuredLimit = Math.min(12, Math.max(1, config?.featuredProductLimit || 4));
   const heroTitle = config?.heroTitle || 'The pieces you reach for, on repeat.';
   const heroSubtitle = config?.heroSubtitle || 'Considered essentials and new favorites, curated for everyday rituals.';
   const shopLabel = config?.shopNavigationLabel || 'Shop';
+  const categoryImage = (categoryId: number) => products?.find((product) => product.categories?.includes(categoryId))?.images?.[0];
+  const configuredCategories = categories || [];
+  const hasConfiguredCategories = configuredCategories.length > 0;
+  const discoveryTiles = hasConfiguredCategories
+    ? configuredCategories.slice(0, 6).map((category, index) => ({
+        key: `category-${category.id}`,
+        name: category.name,
+        href: `/products?category=${category.id}`,
+        image: categoryImage(category.id),
+        tone: index % 3,
+      }))
+    : products?.length
+      ? [
+          { key: 'featured', name: 'Featured picks', href: '/products?sort=featured', image: products[0]?.images?.[0], tone: 0 },
+          { key: 'starting-points', name: 'Starting points', href: '/products?sort=price-asc', image: products[1]?.images?.[0] || products[0]?.images?.[0], tone: 1 },
+          { key: 'signature', name: 'Signature pieces', href: '/products?sort=price-desc', image: products[products.length - 1]?.images?.[0], tone: 2 },
+        ]
+      : [];
 
   return (
     <StorefrontLayout>
@@ -178,6 +196,30 @@ export default function StorefrontHome() {
         </div>
       </section>
 
+      {discoveryTiles.length > 0 && (
+        <section className="mx-auto max-w-[1440px] px-5 pt-16 md:px-8 md:pt-24">
+          <div className="mb-8 flex items-end justify-between gap-6">
+            <div><p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500">{hasConfiguredCategories ? 'Find your favorite' : 'Start here'}</p><h2 className="text-3xl font-semibold tracking-[-0.045em] md:text-5xl">{hasConfiguredCategories ? 'Shop by category' : 'Explore the collection'}</h2></div>
+            <Link href={sp('/products')} className="hidden text-xs font-bold uppercase tracking-[0.16em] underline underline-offset-8 sm:inline-flex">View everything</Link>
+          </div>
+          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
+            {discoveryTiles.map((tile) => {
+              return <a key={tile.key} href={sp(tile.href)} className="group relative aspect-square overflow-hidden bg-stone-200">
+                <StorefrontImage src={tile.image?.url} alt={tile.image?.altText || tile.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]" fallbackClassName={`storefront-category-fallback storefront-category-fallback-${tile.tone}`} fallbackLabel={tile.name.slice(0, 2)} />
+                <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 via-transparent to-transparent" />
+                <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between p-4 text-white"><span className="text-sm font-medium">{tile.name}</span><ArrowUpRight className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" /></div>
+              </a>;
+            })}
+          </div>
+        </section>
+      )}
+
+      <section className="mx-auto max-w-[1440px] px-5 pt-16 md:px-8 md:pt-24">
+        <div className="grid border-y border-stone-200 md:grid-cols-3">
+          {[['Made for togetherness', 'Thoughtful pieces for game nights, weekends, and everyday rituals.'], ['Choose with confidence', 'Clear product details, flexible options, and a simple shopping path.'], ['Shop your way', 'Discover by category, search the collection, and check out securely with Shopify.']].map(([title, description], index) => <div key={title} className={`px-0 py-7 md:px-8 md:py-9 ${index > 0 ? 'md:border-l md:border-stone-200' : ''}`}><p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--brand-primary)]">0{index + 1}</p><h3 className="mt-4 text-xl font-semibold tracking-[-0.035em]">{title}</h3><p className="mt-3 max-w-xs text-sm leading-6 text-stone-500">{description}</p></div>)}
+        </div>
+      </section>
+
       <section className="mx-auto max-w-[1440px] px-5 py-16 md:px-8 md:py-28">
         <div className="mb-10 grid gap-5 md:grid-cols-[1fr_auto] md:items-end md:gap-10">
           <div className="max-w-xl">
@@ -196,7 +238,7 @@ export default function StorefrontHome() {
             {products.slice(0, featuredLimit).map((product) => (
               <Link key={product.id} href={sp(`/products/${product.id}`)} className="group block">
                 <div className="relative mb-3 aspect-[4/5] overflow-hidden bg-stone-100">
-                  <ProductImage src={product.images?.[0]?.url} alt={product.images?.[0]?.altText || product.name} />
+                  <StorefrontImage src={product.images?.[0]?.url} alt={product.images?.[0]?.altText || product.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.035]" />
                   {product.preOrder && <span className="absolute left-3 top-3 bg-white px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.14em] text-stone-900">Pre-order</span>}
                 </div>
                 <div className="flex items-start justify-between gap-3">

@@ -179,6 +179,30 @@
   text-transform: uppercase;
 }
 
+.storefront-category-fallback {
+  display: grid;
+  width: 100%;
+  height: 100%;
+  place-items: center;
+  color: rgb(255 255 255 / 0.88);
+  font-size: 2rem;
+  font-weight: 700;
+  letter-spacing: -0.08em;
+  text-transform: uppercase;
+}
+
+.storefront-category-fallback-0 {
+  background: linear-gradient(135deg, color-mix(in srgb, var(--brand-primary, #1c1917) 76%, black), var(--brand-primary, #1c1917));
+}
+
+.storefront-category-fallback-1 {
+  background: linear-gradient(135deg, #8a7962, #40382e);
+}
+
+.storefront-category-fallback-2 {
+  background: linear-gradient(135deg, #7e8c75, #3f4a3d);
+}
+
 @keyframes storefront-shimmer {
   to { background-position: -200% 0; }
 }
