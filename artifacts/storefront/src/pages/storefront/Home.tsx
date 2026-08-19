@@ -3,7 +3,7 @@ import { useParams, Link } from 'wouter';
 import { ShoppingCart } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useStorefront } from '@/context/StorefrontContext';
-import { getCart } from '@/lib/cart';
+import { useCartCount } from '@/lib/useCartCount';
 
 function useStorefrontEnabled() {
   const [enabled, setEnabled] = useState<boolean | null>(null);
@@ -16,30 +16,6 @@ function useStorefrontEnabled() {
   return enabled;
 }
 
-function useCartCount(storeSlug: string): number {
-  const [count, setCount] = useState(() =>
-    storeSlug ? getCart(storeSlug).reduce((sum, i) => sum + i.quantity, 0) : 0
-  );
-
-  useEffect(() => {
-    if (!storeSlug) return;
-    const update = () => {
-      setCount(getCart(storeSlug).reduce((sum, i) => sum + i.quantity, 0));
-    };
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === `storefront-cart:${storeSlug}`) update();
-    };
-    update();
-    window.addEventListener('cart-updated', update);
-    window.addEventListener('storage', onStorage);
-    return () => {
-      window.removeEventListener('cart-updated', update);
-      window.removeEventListener('storage', onStorage);
-    };
-  }, [storeSlug]);
-
-  return count;
-}
 
 export function StorefrontLayout({ children }: { children: React.ReactNode }) {
   const { storeSlug: paramSlug } = useParams();
