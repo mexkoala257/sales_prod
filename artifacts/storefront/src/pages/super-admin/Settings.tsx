@@ -214,7 +214,10 @@ function ShopifyConnectionCard({
                 <p className="text-xs opacity-75">Since {new Date(oauthStatus.connectedAt).toLocaleString()}</p>
               )}
               {!oauthStatus?.hasStorefrontToken && (
-                <p className="text-xs text-amber-700 mt-1">⚠ Storefront API token missing — B2C checkout won't work. Paste it manually below.</p>
+                <p className="text-xs text-amber-700 mt-1">
+                  ⚠ Storefront API token missing — B2C checkout won't work.
+                  In your Partner Dashboard app → <strong>Configuration</strong>, enable <strong>Storefront API integration</strong> and add the <code>unauthenticated_read_product_listings</code> and <code>unauthenticated_write_checkouts</code> scopes, then Disconnect and Reconnect here.
+                </p>
               )}
             </div>
             <Button size="sm" variant="outline" className="shrink-0 text-red-600 border-red-300 hover:bg-red-50"
