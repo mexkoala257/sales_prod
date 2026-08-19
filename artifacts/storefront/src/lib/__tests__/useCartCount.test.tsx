@@ -39,6 +39,7 @@ const baseItem = {
 beforeEach(() => {
   localStorageMock.clear();
   vi.clearAllMocks();
+  vi.restoreAllMocks();
 });
 
 // ---------------------------------------------------------------------------
@@ -61,6 +62,38 @@ describe('useCartCount', () => {
     store[`storefront-cart:${SLUG}`] = JSON.stringify(items);
     const { result } = renderHook(() => useCartCount(SLUG));
     expect(result.current).toBe(4);
+  });
+
+  it('returns 0 on mount when stored data is malformed JSON', () => {
+    store[`storefront-cart:${SLUG}`] = 'not-valid-json{{{';
+    const { result } = renderHook(() => useCartCount(SLUG));
+    expect(result.current).toBe(0);
+  });
+
+  it('returns 0 on mount when stored data contains null entries ([null])', () => {
+    store[`storefront-cart:${SLUG}`] = JSON.stringify([null]);
+    const { result } = renderHook(() => useCartCount(SLUG));
+    expect(result.current).toBe(0);
+  });
+
+  it('returns 0 on mount when stored data contains empty objects ([{}])', () => {
+    store[`storefront-cart:${SLUG}`] = JSON.stringify([{}]);
+    const { result } = renderHook(() => useCartCount(SLUG));
+    expect(result.current).toBe(0);
+  });
+
+  it('returns 0 on mount when stored data contains items with invalid quantity', () => {
+    const bad = [{ ...baseItem, quantity: 'two' }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(bad);
+    const { result } = renderHook(() => useCartCount(SLUG));
+    expect(result.current).toBe(0);
+  });
+
+  it('returns 0 on mount when stored data contains partial items (missing unitPrice)', () => {
+    const partial = [{ productId: 1, variantId: null, name: 'X', variantLabel: null, quantity: 3, imageUrl: null }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(partial);
+    const { result } = renderHook(() => useCartCount(SLUG));
+    expect(result.current).toBe(0);
   });
 
   it('updates the count when addToCart dispatches cart-updated', () => {
@@ -133,6 +166,213 @@ describe('useCartCount', () => {
     });
 
     expect(result.current).toBe(2);
+  });
+
+  it('preserves the count when a storage event carries malformed JSON', () => {
+    // Start with a known count
+    const items = [{ ...baseItem, quantity: 7 }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(items);
+    const { result } = renderHook(() => useCartCount(SLUG));
+    expect(result.current).toBe(7);
+
+    act(() => {
+      // Another tab writes garbage
+      store[`storefront-cart:${SLUG}`] = 'not-valid-json{{{';
+
+      window.dispatchEvent(
+        Object.assign(new Event('storage'), {
+          key: `storefront-cart:${SLUG}`,
+          newValue: 'not-valid-json{{{',
+        }) as StorageEvent,
+      );
+    });
+
+    // Count must NOT silently drop to 0
+    expect(result.current).toBe(7);
+  });
+
+  it('preserves the count when a storage event carries a non-array JSON value', () => {
+    const items = [{ ...baseItem, quantity: 3 }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(items);
+    const { result } = renderHook(() => useCartCount(SLUG));
+    expect(result.current).toBe(3);
+
+    act(() => {
+      store[`storefront-cart:${SLUG}`] = JSON.stringify({ corrupted: true });
+
+      window.dispatchEvent(
+        Object.assign(new Event('storage'), {
+          key: `storefront-cart:${SLUG}`,
+          newValue: JSON.stringify({ corrupted: true }),
+        }) as StorageEvent,
+      );
+    });
+
+    expect(result.current).toBe(3);
+  });
+
+  it('preserves the count when a storage event carries an array with null entries ([null])', () => {
+    const items = [{ ...baseItem, quantity: 6 }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(items);
+    const { result } = renderHook(() => useCartCount(SLUG));
+    expect(result.current).toBe(6);
+
+    act(() => {
+      store[`storefront-cart:${SLUG}`] = JSON.stringify([null]);
+      window.dispatchEvent(
+        Object.assign(new Event('storage'), {
+          key: `storefront-cart:${SLUG}`,
+          newValue: JSON.stringify([null]),
+        }) as StorageEvent,
+      );
+    });
+
+    expect(result.current).toBe(6);
+  });
+
+  it('preserves the count when a storage event carries an array with empty objects ([{}])', () => {
+    const items = [{ ...baseItem, quantity: 4 }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(items);
+    const { result } = renderHook(() => useCartCount(SLUG));
+    expect(result.current).toBe(4);
+
+    act(() => {
+      store[`storefront-cart:${SLUG}`] = JSON.stringify([{}]);
+      window.dispatchEvent(
+        Object.assign(new Event('storage'), {
+          key: `storefront-cart:${SLUG}`,
+          newValue: JSON.stringify([{}]),
+        }) as StorageEvent,
+      );
+    });
+
+    expect(result.current).toBe(4);
+  });
+
+  it('preserves the count when a storage event carries an array with invalid quantity', () => {
+    const items = [{ ...baseItem, quantity: 2 }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(items);
+    const { result } = renderHook(() => useCartCount(SLUG));
+    expect(result.current).toBe(2);
+
+    act(() => {
+      const bad = [{ ...baseItem, quantity: 'two' }];
+      store[`storefront-cart:${SLUG}`] = JSON.stringify(bad);
+      window.dispatchEvent(
+        Object.assign(new Event('storage'), {
+          key: `storefront-cart:${SLUG}`,
+          newValue: JSON.stringify(bad),
+        }) as StorageEvent,
+      );
+    });
+
+    expect(result.current).toBe(2);
+  });
+
+  it('preserves the count when a storage event carries a partial CartItem (missing unitPrice)', () => {
+    const items = [{ ...baseItem, quantity: 5 }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(items);
+    const { result } = renderHook(() => useCartCount(SLUG));
+    expect(result.current).toBe(5);
+
+    act(() => {
+      // Missing unitPrice — structurally partial, not a valid CartItem
+      const partial = [{ productId: 1, variantId: null, name: 'X', variantLabel: null, quantity: 3, imageUrl: null }];
+      store[`storefront-cart:${SLUG}`] = JSON.stringify(partial);
+      window.dispatchEvent(
+        Object.assign(new Event('storage'), {
+          key: `storefront-cart:${SLUG}`,
+          newValue: JSON.stringify(partial),
+        }) as StorageEvent,
+      );
+    });
+
+    expect(result.current).toBe(5);
+  });
+
+  it('preserves the count when a storage event carries a partial CartItem (missing variantLabel)', () => {
+    const items = [{ ...baseItem, quantity: 3 }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(items);
+    const { result } = renderHook(() => useCartCount(SLUG));
+    expect(result.current).toBe(3);
+
+    act(() => {
+      // Missing variantLabel — required field (must be explicitly null)
+      const partial = [{ productId: 1, variantId: null, name: 'X', unitPrice: 10, quantity: 2, imageUrl: null }];
+      store[`storefront-cart:${SLUG}`] = JSON.stringify(partial);
+      window.dispatchEvent(
+        Object.assign(new Event('storage'), {
+          key: `storefront-cart:${SLUG}`,
+          newValue: JSON.stringify(partial),
+        }) as StorageEvent,
+      );
+    });
+
+    expect(result.current).toBe(3);
+  });
+
+  it('resets to 0 when another tab calls localStorage.clear() (storage event with key === null)', () => {
+    const items = [{ ...baseItem, quantity: 5 }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(items);
+    const { result } = renderHook(() => useCartCount(SLUG));
+    expect(result.current).toBe(5);
+
+    act(() => {
+      // Simulate localStorage.clear() from another tab: key is null, all storage gone
+      localStorageMock.clear();
+      window.dispatchEvent(
+        Object.assign(new Event('storage'), {
+          key: null,
+          newValue: null,
+        }) as StorageEvent,
+      );
+    });
+
+    // Missing key after clear = intentionally empty = 0
+    expect(result.current).toBe(0);
+  });
+
+  it('resets to 0 when another tab removes this cart key (key present, newValue null)', () => {
+    const items = [{ ...baseItem, quantity: 4 }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(items);
+    const { result } = renderHook(() => useCartCount(SLUG));
+    expect(result.current).toBe(4);
+
+    act(() => {
+      // Tab removes the specific cart key
+      delete store[`storefront-cart:${SLUG}`];
+
+      window.dispatchEvent(
+        Object.assign(new Event('storage'), {
+          key: `storefront-cart:${SLUG}`,
+          newValue: null,
+        }) as StorageEvent,
+      );
+    });
+
+    // Missing key = intentionally empty cart = 0 is correct
+    expect(result.current).toBe(0);
+  });
+
+  it('logs a console.error in dev when cart data is corrupt', () => {
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const items = [{ ...baseItem, quantity: 2 }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(items);
+    renderHook(() => useCartCount(SLUG));
+
+    act(() => {
+      store[`storefront-cart:${SLUG}`] = 'bad-data';
+      window.dispatchEvent(
+        Object.assign(new Event('storage'), {
+          key: `storefront-cart:${SLUG}`,
+          newValue: 'bad-data',
+        }) as StorageEvent,
+      );
+    });
+
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.stringContaining('[cart]'),
+    );
   });
 
   it('removes event listeners on unmount (no memory leaks)', () => {

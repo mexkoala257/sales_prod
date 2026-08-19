@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest';
-import { getCart, addToCart, updateQuantity, clearCart, cartTotal } from '../cart';
+import { getCart, addToCart, updateQuantity, clearCart, cartTotal, readCartCount } from '../cart';
 
 // ---------------------------------------------------------------------------
 // localStorage mock
@@ -55,9 +55,139 @@ describe('getCart', () => {
     expect(getCart(SLUG)).toEqual(items);
   });
 
-  it('returns an empty array when stored JSON is malformed', () => {
+  it('returns an empty array when stored JSON is malformed (safe for callers)', () => {
     store[`storefront-cart:${SLUG}`] = 'not-json{{{';
     expect(getCart(SLUG)).toEqual([]);
+  });
+
+  it('returns an empty array when stored value is a JSON object, not an array', () => {
+    store[`storefront-cart:${SLUG}`] = JSON.stringify({ foo: 'bar' });
+    expect(getCart(SLUG)).toEqual([]);
+  });
+});
+
+// ---------------------------------------------------------------------------
+// readCartCount
+// ---------------------------------------------------------------------------
+describe('readCartCount', () => {
+  it('returns count 0, corrupt false when key is missing', () => {
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: false });
+  });
+
+  it('returns correct count and corrupt false for a valid cart', () => {
+    const items = [
+      { productId: 1, variantId: null, name: 'A', variantLabel: null, unitPrice: 5, quantity: 2, imageUrl: null },
+      { productId: 2, variantId: null, name: 'B', variantLabel: null, unitPrice: 3, quantity: 3, imageUrl: null },
+    ];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(items);
+    expect(readCartCount(SLUG)).toEqual({ count: 5, corrupt: false });
+  });
+
+  it('returns count 0, corrupt true for malformed JSON', () => {
+    store[`storefront-cart:${SLUG}`] = 'not-json{{{';
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns count 0, corrupt true when stored value is a JSON object (not an array)', () => {
+    store[`storefront-cart:${SLUG}`] = JSON.stringify({ corrupted: true });
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns count 0, corrupt true when stored value is a JSON string', () => {
+    store[`storefront-cart:${SLUG}`] = JSON.stringify('hello');
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns count 0, corrupt true when stored value is JSON null', () => {
+    store[`storefront-cart:${SLUG}`] = 'null';
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns count 0, corrupt true when array contains a null entry ([null])', () => {
+    store[`storefront-cart:${SLUG}`] = JSON.stringify([null]);
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns count 0, corrupt true when array contains an object missing required fields ([{}])', () => {
+    store[`storefront-cart:${SLUG}`] = JSON.stringify([{}]);
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns count 0, corrupt true when an item has a non-numeric quantity', () => {
+    const bad = [{ productId: 1, variantId: null, name: 'X', variantLabel: null, unitPrice: 5, quantity: 'two', imageUrl: null }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(bad);
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns count 0, corrupt true when an item has a negative quantity', () => {
+    const bad = [{ productId: 1, variantId: null, name: 'X', variantLabel: null, unitPrice: 5, quantity: -3, imageUrl: null }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(bad);
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns count 0, corrupt true when an item has a non-finite quantity (Infinity)', () => {
+    // JSON.stringify converts Infinity to null, simulating externally injected data
+    store[`storefront-cart:${SLUG}`] = '[{"productId":1,"variantId":null,"name":"X","variantLabel":null,"unitPrice":5,"quantity":null,"imageUrl":null}]';
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns count 0, corrupt false for an empty valid array', () => {
+    store[`storefront-cart:${SLUG}`] = '[]';
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: false });
+  });
+
+  // --- Per-field validation ---
+
+  it('returns corrupt true when productId is missing', () => {
+    const bad = [{ variantId: null, name: 'X', variantLabel: null, unitPrice: 5, quantity: 1, imageUrl: null }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(bad);
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns corrupt true when productId is non-finite (Infinity serialized as null)', () => {
+    store[`storefront-cart:${SLUG}`] = '[{"productId":null,"variantId":null,"name":"X","variantLabel":null,"unitPrice":5,"quantity":1,"imageUrl":null}]';
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns corrupt true when variantId is an invalid type (string instead of null/number)', () => {
+    const bad = [{ productId: 1, variantId: 'bad', name: 'X', variantLabel: null, unitPrice: 5, quantity: 1, imageUrl: null }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(bad);
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns corrupt true when name is missing', () => {
+    const bad = [{ productId: 1, variantId: null, variantLabel: null, unitPrice: 5, quantity: 1, imageUrl: null }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(bad);
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns corrupt true when variantLabel is missing (not present, not null)', () => {
+    const bad = [{ productId: 1, variantId: null, name: 'X', unitPrice: 5, quantity: 1, imageUrl: null }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(bad);
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns corrupt true when unitPrice is missing', () => {
+    const bad = [{ productId: 1, variantId: null, name: 'X', variantLabel: null, quantity: 1, imageUrl: null }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(bad);
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns corrupt true when unitPrice is non-finite', () => {
+    store[`storefront-cart:${SLUG}`] = '[{"productId":1,"variantId":null,"name":"X","variantLabel":null,"unitPrice":null,"quantity":1,"imageUrl":null}]';
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns corrupt true when imageUrl is missing (not present, not null)', () => {
+    const bad = [{ productId: 1, variantId: null, name: 'X', variantLabel: null, unitPrice: 5, quantity: 1 }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(bad);
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
+  });
+
+  it('returns corrupt true when imageUrl is an invalid type (number)', () => {
+    const bad = [{ productId: 1, variantId: null, name: 'X', variantLabel: null, unitPrice: 5, quantity: 1, imageUrl: 42 }];
+    store[`storefront-cart:${SLUG}`] = JSON.stringify(bad);
+    expect(readCartCount(SLUG)).toEqual({ count: 0, corrupt: true });
   });
 });
 
@@ -110,6 +240,13 @@ describe('addToCart', () => {
     addToCart('other-store', item({ productId: 99 }));
     expect(getCart(SLUG)).toHaveLength(1);
     expect(getCart('other-store')).toHaveLength(1);
+  });
+
+  it('recovers gracefully when stored data is corrupt (starts a fresh cart)', () => {
+    store[`storefront-cart:${SLUG}`] = 'bad-json';
+    // addToCart uses getCart (safe) so it starts fresh rather than crashing
+    addToCart(SLUG, item(), 1);
+    expect(getCart(SLUG)).toHaveLength(1);
   });
 });
 
