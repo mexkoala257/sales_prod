@@ -33,6 +33,7 @@ import type {
   CategoryInput,
   CategoryUpdate,
   ClientProductAccess,
+  DisconnectShopifyOAuth200,
   HealthStatus,
   LoginInput,
   Order,
@@ -51,6 +52,7 @@ import type {
   ShopifyCollectionInfo,
   ShopifyMappingRow,
   ShopifyMappingsUpdate,
+  ShopifyOAuthStatus,
   ShopifySyncResult,
   ShopifySyncStatus,
   ShopifySyncSummary,
@@ -1561,6 +1563,231 @@ export const useTestSmtpEmail = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getTestSmtpEmailMutationOptions(options));
+    }
+
+export const getStartShopifyOAuthUrl = () => {
+
+
+
+
+  return `/api/super-admin/shopify/oauth/start`
+}
+
+/**
+ * @summary Redirect browser to Shopify's OAuth authorization page
+ */
+export const startShopifyOAuth = async ( options?: Parameters<typeof customFetch>[1]): Promise<unknown> => {
+
+  return customFetch<unknown>(getStartShopifyOAuthUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getStartShopifyOAuthQueryKey = () => {
+    return [
+    `/api/super-admin/shopify/oauth/start`
+    ] as const;
+    }
+
+
+export const getStartShopifyOAuthQueryOptions = <TData = Awaited<ReturnType<typeof startShopifyOAuth>>, TError = ErrorType<void>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof startShopifyOAuth>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getStartShopifyOAuthQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof startShopifyOAuth>>> = ({ signal }) => startShopifyOAuth({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof startShopifyOAuth>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type StartShopifyOAuthQueryResult = NonNullable<Awaited<ReturnType<typeof startShopifyOAuth>>>
+export type StartShopifyOAuthQueryError = ErrorType<void>
+
+
+/**
+ * @summary Redirect browser to Shopify's OAuth authorization page
+ */
+
+export function useStartShopifyOAuth<TData = Awaited<ReturnType<typeof startShopifyOAuth>>, TError = ErrorType<void>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof startShopifyOAuth>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getStartShopifyOAuthQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getGetShopifyOAuthStatusUrl = () => {
+
+
+
+
+  return `/api/super-admin/shopify/oauth/status`
+}
+
+/**
+ * @summary Returns whether the store is connected via OAuth
+ */
+export const getShopifyOAuthStatus = async ( options?: Parameters<typeof customFetch>[1]): Promise<ShopifyOAuthStatus> => {
+
+  return customFetch<ShopifyOAuthStatus>(getGetShopifyOAuthStatusUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetShopifyOAuthStatusQueryKey = () => {
+    return [
+    `/api/super-admin/shopify/oauth/status`
+    ] as const;
+    }
+
+
+export const getGetShopifyOAuthStatusQueryOptions = <TData = Awaited<ReturnType<typeof getShopifyOAuthStatus>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getShopifyOAuthStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetShopifyOAuthStatusQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getShopifyOAuthStatus>>> = ({ signal }) => getShopifyOAuthStatus({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getShopifyOAuthStatus>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetShopifyOAuthStatusQueryResult = NonNullable<Awaited<ReturnType<typeof getShopifyOAuthStatus>>>
+export type GetShopifyOAuthStatusQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Returns whether the store is connected via OAuth
+ */
+
+export function useGetShopifyOAuthStatus<TData = Awaited<ReturnType<typeof getShopifyOAuthStatus>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getShopifyOAuthStatus>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetShopifyOAuthStatusQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getDisconnectShopifyOAuthUrl = () => {
+
+
+
+
+  return `/api/super-admin/shopify/oauth/disconnect`
+}
+
+/**
+ * @summary Clear stored Shopify tokens and disconnect
+ */
+export const disconnectShopifyOAuth = async ( options?: Parameters<typeof customFetch>[1]): Promise<DisconnectShopifyOAuth200> => {
+
+  return customFetch<DisconnectShopifyOAuth200>(getDisconnectShopifyOAuthUrl(),
+  {
+    ...options,
+    method: 'DELETE'
+
+
+  }
+);}
+
+
+
+
+
+export const getDisconnectShopifyOAuthMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectShopifyOAuth>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof disconnectShopifyOAuth>>, TError,void, TContext> => {
+
+const mutationKey = ['disconnectShopifyOAuth'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof disconnectShopifyOAuth>>, void> = () => {
+
+
+          return  disconnectShopifyOAuth(requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type DisconnectShopifyOAuthMutationResult = NonNullable<Awaited<ReturnType<typeof disconnectShopifyOAuth>>>
+
+    export type DisconnectShopifyOAuthMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Clear stored Shopify tokens and disconnect
+ */
+export const useDisconnectShopifyOAuth = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof disconnectShopifyOAuth>>, TError,void, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof disconnectShopifyOAuth>>,
+        TError,
+        void,
+        TContext
+      > => {
+      return useMutation(getDisconnectShopifyOAuthMutationOptions(options));
     }
 
 export const getListShopifyCollectionsUrl = () => {

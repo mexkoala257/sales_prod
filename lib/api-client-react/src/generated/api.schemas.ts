@@ -330,6 +330,16 @@ export interface ShopifySyncResult {
   errors?: number | null;
 }
 
+export interface ShopifyOAuthStatus {
+  connected: boolean;
+  /** @nullable */
+  connectedAt?: string | null;
+  /** @nullable */
+  storeUrl?: string | null;
+  hasStorefrontToken: boolean;
+  hasClientId: boolean;
+}
+
 export interface ShopifyCollectionInfo {
   id: string;
   title: string;
@@ -702,6 +712,10 @@ export interface TestEmailResult {
   success: boolean;
   message: string;
 }
+
+export type DisconnectShopifyOAuth200 = {
+  disconnected: boolean;
+};
 
 export type ResolveStorefrontByDomainParams = {
 /**

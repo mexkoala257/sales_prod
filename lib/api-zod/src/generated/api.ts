@@ -483,6 +483,32 @@ export const TestSmtpEmailResponse = zod.object({
 
 
 /**
+ * @summary Redirect browser to Shopify's OAuth authorization page
+ */
+export const StartShopifyOAuthResponse = zod.void()
+
+
+/**
+ * @summary Returns whether the store is connected via OAuth
+ */
+export const GetShopifyOAuthStatusResponse = zod.object({
+  "connected": zod.boolean(),
+  "connectedAt": zod.string().nullish(),
+  "storeUrl": zod.string().nullish(),
+  "hasStorefrontToken": zod.boolean(),
+  "hasClientId": zod.boolean()
+})
+
+
+/**
+ * @summary Clear stored Shopify tokens and disconnect
+ */
+export const DisconnectShopifyOAuthResponse = zod.object({
+  "disconnected": zod.boolean()
+})
+
+
+/**
  * @summary List Shopify collections with their store mappings
  */
 export const ListShopifyCollectionsResponseItem = zod.object({

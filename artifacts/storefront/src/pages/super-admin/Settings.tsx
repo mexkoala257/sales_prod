@@ -2,12 +2,14 @@ import React, { useEffect, useState } from 'react';
 import {
   useGetPlatformSettings, useUpdatePlatformSettings, useTestSmtpEmail,
   useListShopifyCollections, useUpdateShopifyMappings, useRunShopifySync, useGetShopifySyncStatus,
+  useGetShopifyOAuthStatus, useDisconnectShopifyOAuth,
   useListStores,
 } from '@workspace/api-client-react';
 import { Button, Card, CardContent, CardDescription, CardHeader, CardTitle, Input, Label } from '@/components/ui';
 import { useToast } from '@/hooks/use-toast';
-import { Eye, EyeOff, Save, Send, Settings as SettingsIcon, RefreshCw, Store } from 'lucide-react';
+import { Eye, EyeOff, Save, Send, Settings as SettingsIcon, RefreshCw, Store, Link2, Link2Off, CheckCircle2, AlertCircle } from 'lucide-react';
 import type { PlatformSetting } from '@workspace/api-client-react';
+import { useSearch } from 'wouter';
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -122,6 +124,162 @@ function SectionCard({ title, description, children, onSave, saving, footer }: S
           </Button>
           {footer}
         </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// ── Shopify connection (OAuth) ────────────────────────────────────────────────
+
+function ShopifyConnectionCard({
+  values, set, saveSection, savingSection,
+}: {
+  values: Record<string, string>;
+  set: (key: string) => (v: string) => void;
+  saveSection: (label: string, fields: Array<{ key: string; isSecret?: boolean }>) => void;
+  savingSection: string | null;
+}) {
+  const { toast } = useToast();
+  const search = useSearch();
+  const params = new URLSearchParams(search);
+  const oauthResult = params.get('shopify');
+
+  const { data: oauthStatus, refetch: refetchStatus } = useGetShopifyOAuthStatus();
+  const disconnect = useDisconnectShopifyOAuth();
+
+  // Show toast on redirect-back from Shopify
+  useEffect(() => {
+    if (oauthResult === 'connected') {
+      toast({ title: 'Shopify connected', description: 'Your store is now linked. Run a sync to import your catalog.' });
+      refetchStatus();
+    } else if (oauthResult === 'error') {
+      const reason = params.get('reason') ?? 'unknown';
+      toast({ title: 'Shopify connection failed', description: `Error: ${reason}. Check your credentials and try again.`, variant: 'destructive' });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [oauthResult]);
+
+  const handleDisconnect = async () => {
+    await disconnect.mutateAsync();
+    toast({ title: 'Shopify disconnected', description: 'Tokens cleared. Re-connect to resume sync.' });
+    refetchStatus();
+  };
+
+  const connected = oauthStatus?.connected ?? false;
+
+  return (
+    <Card>
+      <CardHeader className="pb-4">
+        <CardTitle className="text-base font-semibold flex items-center gap-2">
+          <Store className="h-4 w-4" />
+          Shopify
+        </CardTitle>
+        <CardDescription>
+          Connect your Shopify store for catalog sync, B2C hosted checkout, and B2B order push.
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-6">
+
+        {/* Connection status banner */}
+        {connected ? (
+          <div className="flex items-center gap-3 p-3 border border-green-200 bg-green-50 text-green-800 text-sm">
+            <CheckCircle2 className="h-4 w-4 shrink-0" />
+            <div className="flex-1 min-w-0">
+              <p className="font-medium">Connected to {oauthStatus?.storeUrl}</p>
+              {oauthStatus?.connectedAt && (
+                <p className="text-xs opacity-75">Since {new Date(oauthStatus.connectedAt).toLocaleString()}</p>
+              )}
+              {!oauthStatus?.hasStorefrontToken && (
+                <p className="text-xs text-amber-700 mt-1">⚠ Storefront API token missing — B2C checkout won't work. Paste it manually below.</p>
+              )}
+            </div>
+            <Button size="sm" variant="outline" className="shrink-0 text-red-600 border-red-300 hover:bg-red-50"
+              onClick={handleDisconnect} disabled={disconnect.isPending}>
+              <Link2Off className="h-3.5 w-3.5 mr-1.5" />
+              {disconnect.isPending ? 'Disconnecting…' : 'Disconnect'}
+            </Button>
+          </div>
+        ) : (
+          <div className="flex items-center gap-3 p-3 border bg-zinc-50 text-sm text-muted-foreground">
+            <AlertCircle className="h-4 w-4 shrink-0" />
+            <p>Not connected. Fill in your app credentials below then click <strong>Connect Shopify</strong>.</p>
+          </div>
+        )}
+
+        {/* Step 1: App credentials (always editable) */}
+        <div className="space-y-4">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Step 1 — App credentials</p>
+          <p className="text-xs text-muted-foreground -mt-2">
+            From your Shopify Dev Dashboard app → <strong>Settings</strong> tab.
+          </p>
+          <SettingField id="shopifyStoreUrl" label="Store URL" placeholder="my-shop.myshopify.com"
+            description="Your .myshopify.com domain."
+            value={values['shopifyStoreUrl'] ?? ''} onChange={set('shopifyStoreUrl')} />
+          <SettingField id="shopifyClientId" label="Client ID"
+            description="Client ID from your Dev Dashboard app's Settings tab."
+            value={values['shopifyClientId'] ?? ''} onChange={set('shopifyClientId')} />
+          <SettingField id="shopifyClientSecret" label="Client Secret" isSecret
+            description="Secret from your Dev Dashboard app's Settings tab."
+            value={values['shopifyClientSecret'] ?? ''} onChange={set('shopifyClientSecret')} />
+        </div>
+
+        {/* Save credentials then connect */}
+        <div className="flex items-center gap-3">
+          <Button size="sm" variant="outline"
+            onClick={() => saveSection('Shopify credentials', [
+              { key: 'shopifyStoreUrl' },
+              { key: 'shopifyClientId' },
+              { key: 'shopifyClientSecret', isSecret: true },
+            ])}
+            disabled={savingSection === 'Shopify credentials'}>
+            <Save className="h-3.5 w-3.5 mr-1.5" />
+            {savingSection === 'Shopify credentials' ? 'Saving…' : 'Save credentials'}
+          </Button>
+          <a href="/api/super-admin/shopify/oauth/start">
+            <Button size="sm" disabled={!values['shopifyStoreUrl'] || !values['shopifyClientId']}>
+              <Link2 className="h-3.5 w-3.5 mr-1.5" />
+              {connected ? 'Re-connect Shopify' : 'Connect Shopify'}
+            </Button>
+          </a>
+        </div>
+
+        {/* Step 2: Redirect URI to register */}
+        <div className="space-y-2 pt-2 border-t">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Step 2 — Register redirect URI</p>
+          <p className="text-xs text-muted-foreground">
+            In your Dev Dashboard app → <strong>Configuration</strong>, add this as an allowed redirect URL:
+          </p>
+          <code className="block text-xs bg-zinc-100 px-3 py-2 font-mono break-all">
+            {window.location.origin}/api/shopify/oauth/callback
+          </code>
+        </div>
+
+        {/* Step 3: Additional settings after connection */}
+        <div className="space-y-4 pt-2 border-t">
+          <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Step 3 — Additional settings</p>
+          {!oauthStatus?.hasStorefrontToken && (
+            <SettingField id="shopifyStorefrontToken" label="Storefront API Token (manual)"
+              description="Only needed if auto-creation failed during OAuth. Find it in Dev Dashboard → Settings."
+              value={values['shopifyStorefrontToken'] ?? ''} onChange={set('shopifyStorefrontToken')} />
+          )}
+          <SettingField id="shopifyWebhookSecret" label="Webhook Signing Secret" isSecret
+            description="From Shopify Admin → Settings → Notifications → Webhooks. Verifies orders/create webhooks."
+            value={values['shopifyWebhookSecret'] ?? ''} onChange={set('shopifyWebhookSecret')} />
+          <SettingField id="shopifySyncIntervalMinutes" label="Background Sync Interval (minutes)" placeholder="60"
+            type="number" description="How often the catalog syncs automatically. Minimum 5."
+            value={values['shopifySyncIntervalMinutes'] ?? ''} onChange={set('shopifySyncIntervalMinutes')} />
+          <Button size="sm" variant="outline"
+            onClick={() => saveSection('Shopify settings', [
+              { key: 'shopifyStorefrontToken' },
+              { key: 'shopifyWebhookSecret', isSecret: true },
+              { key: 'shopifySyncIntervalMinutes' },
+            ])}
+            disabled={savingSection === 'Shopify settings'}>
+            <Save className="h-3.5 w-3.5 mr-1.5" />
+            {savingSection === 'Shopify settings' ? 'Saving…' : 'Save settings'}
+          </Button>
+        </div>
+
       </CardContent>
     </Card>
   );
@@ -378,34 +536,8 @@ export default function SuperAdminSettings() {
       </SectionCard>
 
       {/* Shopify */}
-      <SectionCard
-        title="Shopify"
-        description="Shopify store connection for catalog sync, B2C hosted checkout, and B2B order push."
-        onSave={() => saveSection('Shopify', [
-          { key: 'shopifyStoreUrl' },
-          { key: 'shopifyAdminToken', isSecret: true },
-          { key: 'shopifyStorefrontToken' },
-          { key: 'shopifyWebhookSecret', isSecret: true },
-          { key: 'shopifySyncIntervalMinutes' },
-        ])}
-        saving={savingSection === 'Shopify'}
-      >
-        <SettingField id="shopifyStoreUrl" label="Store URL" placeholder="my-shop.myshopify.com"
-          description="Your Shopify store domain."
-          value={values['shopifyStoreUrl'] ?? ''} onChange={set('shopifyStoreUrl')} />
-        <SettingField id="shopifyAdminToken" label="Admin API Access Token" isSecret
-          description="Used for catalog sync and pushing B2B draft orders."
-          value={values['shopifyAdminToken'] ?? ''} onChange={set('shopifyAdminToken')} />
-        <SettingField id="shopifyStorefrontToken" label="Storefront API Public Token"
-          description="Public access token used to create B2C checkout carts."
-          value={values['shopifyStorefrontToken'] ?? ''} onChange={set('shopifyStorefrontToken')} />
-        <SettingField id="shopifyWebhookSecret" label="Webhook Signing Secret" isSecret
-          description="From your Shopify app's webhook settings; verifies orders/create webhooks."
-          value={values['shopifyWebhookSecret'] ?? ''} onChange={set('shopifyWebhookSecret')} />
-        <SettingField id="shopifySyncIntervalMinutes" label="Background Sync Interval (minutes)" placeholder="60"
-          type="number" description="How often the catalog is synced automatically. Minimum 5."
-          value={values['shopifySyncIntervalMinutes'] ?? ''} onChange={set('shopifySyncIntervalMinutes')} />
-      </SectionCard>
+      <ShopifyConnectionCard values={values} set={set} saveSection={saveSection} savingSection={savingSection} />
+
 
       {/* Shopify collection mapping + sync */}
       <ShopifySyncCard />

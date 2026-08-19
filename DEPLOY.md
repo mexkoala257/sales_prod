@@ -244,13 +244,30 @@ no further action is needed after the initial setup.
 
 ## Shopify Integration Setup
 
-Configure Shopify in **Super Admin → Settings → Shopify**:
+Shopify no longer allows creating new custom apps with static tokens. The platform uses OAuth — you create an app in the Shopify Dev Dashboard and the platform completes the handshake automatically.
 
-1. **Store URL** — your `*.myshopify.com` domain.
-2. **Admin API Access Token** — from a Shopify custom app (Settings → Apps → Develop apps) with `read_products`, `read_collections` (for catalog sync) and `write_draft_orders` (for B2B order push) scopes.
-3. **Storefront API Public Token** — from the same app's Storefront API section, with `unauthenticated_read_product_listings` and `unauthenticated_write_checkouts` scopes. Used to create B2C checkout carts.
-4. **Webhook Signing Secret** — see below.
-5. Map Shopify collections to storefronts in the "Shopify Collections → Storefronts" card, then click **Sync Now**. Background sync re-runs automatically at the configured interval.
+### Step 1 — Create a Dev Dashboard app
+
+1. Go to [partners.shopify.com](https://partners.shopify.com) → **Apps → Create app → Create app manually**.
+2. Give it a name (e.g. "Platform Sync").
+3. Under **Configuration**, add this to the **Allowed redirection URLs** list:
+   ```
+   https://<your-platform-domain>/api/shopify/oauth/callback
+   ```
+4. Under **API access → Admin API**, enable these scopes:
+   - `read_products`, `read_product_listings`, `read_collections`
+   - `write_draft_orders`, `read_draft_orders`, `read_orders`
+5. Click **Save**.
+6. Copy the **Client ID** and **Client secret** from the app's **Settings** tab.
+
+### Step 2 — Connect in Super Admin
+
+1. Log in at `/super-admin/login`.
+2. Go to **Settings → Shopify**.
+3. Fill in **Store URL** (`my-shop.myshopify.com`), **Client ID**, and **Client Secret**, then click **Save credentials**.
+4. Click **Connect Shopify** — you'll be redirected to Shopify to approve the scopes.
+5. After approving, you're redirected back with a ✓ Connected banner. The platform auto-creates a Storefront API token; if that step fails, paste the token from the Dev Dashboard Settings tab manually.
+6. Map collections to storefronts in the **Shopify Collections → Storefronts** card, then click **Sync Now**. Background sync runs automatically at the configured interval.
 
 ### Registering the orders/create webhook
 
