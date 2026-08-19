@@ -26,6 +26,7 @@ const router: IRouter = Router();
 // Note: read_collections was removed by Shopify; collections are covered by read_products.
 const SCOPES = [
   "read_products",
+  "write_products",
   "read_product_listings",
   "write_draft_orders",
   "read_draft_orders",
@@ -33,7 +34,11 @@ const SCOPES = [
 ].join(",");
 
 function normalizeShop(raw: string): string {
-  return raw.trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "").toLowerCase();
+  const shop = raw.trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "").toLowerCase();
+  if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(shop)) {
+    throw new Error("Shopify store URL must be a valid *.myshopify.com domain.");
+  }
+  return shop;
 }
 
 function callbackUrl(req: Request): string {
@@ -74,7 +79,13 @@ router.get("/super-admin/shopify/oauth/start", requireSuperAdmin, async (req: Re
     return;
   }
 
-  const shop = normalizeShop(storeUrl);
+  let shop: string;
+  try {
+    shop = normalizeShop(storeUrl);
+  } catch (err) {
+    res.status(400).json({ error: err instanceof Error ? err.message : "Invalid Shopify store URL." });
+    return;
+  }
   const state = randomBytes(16).toString("hex");
   await upsertSettings([{ key: "shopifyOAuthState", value: state }]);
 
@@ -101,6 +112,12 @@ router.get("/shopify/oauth/callback", async (req: Request, res: Response): Promi
 
   if (!code || !shop || !state || !hmac) {
     res.redirect(`${frontendBase}?shopify=error&reason=missing_params`);
+    return;
+  }
+  try {
+    normalizeShop(shop);
+  } catch {
+    res.redirect(`${frontendBase}?shopify=error&reason=invalid_shop`);
     return;
   }
 
@@ -185,11 +202,11 @@ router.get("/shopify/oauth/callback", async (req: Request, res: Response): Promi
     // Persist tokens; invalidate one-time nonce
     const toSave = [
       { key: "shopifyStoreUrl", value: shop },
-      { key: "shopifyAdminToken", value: adminToken },
+      { key: "shopifyAdminToken", value: adminToken, isSecret: true },
       { key: "shopifyConnectedAt", value: new Date().toISOString() },
       { key: "shopifyOAuthState", value: "" },
     ];
-    if (storefrontToken) toSave.push({ key: "shopifyStorefrontToken", value: storefrontToken });
+    if (storefrontToken) toSave.push({ key: "shopifyStorefrontToken", value: storefrontToken, isSecret: true });
     await upsertSettings(toSave);
 
     logger.info({ shop, hasStorefrontToken: !!storefrontToken }, "Shopify OAuth: store connected successfully");
@@ -223,8 +240,8 @@ router.get("/super-admin/shopify/oauth/status", requireSuperAdmin, async (_req: 
 
 router.delete("/super-admin/shopify/oauth/disconnect", requireSuperAdmin, async (_req: Request, res: Response): Promise<void> => {
   await upsertSettings([
-    { key: "shopifyAdminToken", value: "" },
-    { key: "shopifyStorefrontToken", value: "" },
+    { key: "shopifyAdminToken", value: "", isSecret: true },
+    { key: "shopifyStorefrontToken", value: "", isSecret: true },
     { key: "shopifyConnectedAt", value: "" },
     { key: "shopifyOAuthState", value: "" },
   ]);

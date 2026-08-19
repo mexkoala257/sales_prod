@@ -1,22 +1,38 @@
-import { useListAdminProducts, useSyncProductToShopify } from '@workspace/api-client-react';
+import { useListAdminProducts, useSyncProductToShopify, useImportFromShopify, getListAdminProductsQueryKey } from '@workspace/api-client-react';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow, Badge, Button } from '@/components/ui';
 import { Link } from 'wouter';
-import { Plus, Edit, RefreshCw } from 'lucide-react';
+import { Plus, Edit, RefreshCw, Download } from 'lucide-react';
+import { useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 
 export default function AdminProducts() {
   const { data: products, isLoading } = useListAdminProducts();
   const syncProduct = useSyncProductToShopify();
+  const importProducts = useImportFromShopify();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
 
   const handleSync = (productId: string) => {
     syncProduct.mutate({ productId }, {
       onSuccess: (res) => {
         toast({ title: "Sync Complete", description: res.message });
+        queryClient.invalidateQueries({ queryKey: getListAdminProductsQueryKey() });
       },
       onError: (err: any) => {
         toast({ title: "Sync Failed", description: err.message || "An error occurred", variant: "destructive" });
       }
+    });
+  };
+
+  const handleImport = () => {
+    importProducts.mutate(undefined, {
+      onSuccess: (res) => {
+        toast({ title: "Import Complete", description: res.message });
+        queryClient.invalidateQueries({ queryKey: getListAdminProductsQueryKey() });
+      },
+      onError: (err: any) => {
+        toast({ title: "Import Failed", description: err.message || "An error occurred", variant: "destructive" });
+      },
     });
   };
 
@@ -27,12 +43,18 @@ export default function AdminProducts() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-semibold tracking-tight">Product Catalog</h1>
-          <p className="text-muted-foreground mt-1">Manage physical inventory and variants.</p>
+          <p className="text-muted-foreground mt-1">Manage catalog variants. Shopify controls checkout stock availability.</p>
         </div>
-        <Link href="/admin/products/new" className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-none">
-          <Plus className="w-4 h-4 mr-2" />
-          Create Product
-        </Link>
+        <div className="flex gap-2">
+          <Button variant="outline" onClick={handleImport} disabled={importProducts.isPending}>
+            <Download className={`w-4 h-4 mr-2 ${importProducts.isPending ? 'animate-pulse' : ''}`} />
+            {importProducts.isPending ? 'Importing…' : 'Import from Shopify'}
+          </Button>
+          <Link href="/admin/products/new" className="inline-flex items-center justify-center whitespace-nowrap text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 h-10 px-4 py-2 bg-primary text-primary-foreground hover:bg-primary/90 rounded-none">
+            <Plus className="w-4 h-4 mr-2" />
+            Create Product
+          </Link>
+        </div>
       </div>
 
       <div className="bg-card border shadow-sm">
@@ -66,7 +88,7 @@ export default function AdminProducts() {
                   </Badge>
                 </TableCell>
                 <TableCell>
-                  {product.shopifySynced ? (
+                  {product.shopifySynced && product.shopifyProductId ? (
                      <span className="text-xs text-emerald-600 font-medium flex items-center">
                        <span className="w-2 h-2 rounded-full bg-emerald-500 mr-2"></span> Synced
                      </span>

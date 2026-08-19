@@ -255,8 +255,9 @@ Shopify no longer allows creating new custom apps with static tokens. The platfo
    https://<your-platform-domain>/api/shopify/oauth/callback
    ```
 4. Under **API access → Admin API**, enable these scopes:
-   - `read_products`, `read_product_listings`, `read_collections`
-   - `write_draft_orders`, `read_draft_orders`, `read_orders`
+    - `read_products`, `write_products`, `read_product_listings`
+    - `write_draft_orders`, `read_draft_orders`, `read_orders`
+    - Do **not** add `read_collections`; Shopify removed that scope and collection reads are covered by `read_products`.
 5. Click **Save**.
 6. Copy the **Client ID** and **Client secret** from the app's **Settings** tab.
 
@@ -266,7 +267,7 @@ Shopify no longer allows creating new custom apps with static tokens. The platfo
 2. Go to **Settings → Shopify**.
 3. Fill in **Store URL** (`my-shop.myshopify.com`), **Client ID**, and **Client Secret**, then click **Save credentials**.
 4. Click **Connect Shopify** — you'll be redirected to Shopify to approve the scopes.
-5. After approving, you're redirected back with a ✓ Connected banner. The platform auto-creates a Storefront API token; if that step fails, paste the token from the Dev Dashboard Settings tab manually.
+5. After approving the **Admin API** scopes, you're redirected back with a ✓ Connected banner. The platform then auto-creates a separate **Storefront API** token for customer checkout; if that step fails, paste the Storefront token from the Dev Dashboard Settings tab manually.
 6. Map collections to storefronts in the **Shopify Collections → Storefronts** card, then click **Sync Now**. Background sync runs automatically at the configured interval.
 
 ### Registering the orders/create webhook
@@ -278,7 +279,7 @@ So the platform records B2C orders after Shopify checkout completes:
    ```
    https://<your-platform-domain>/api/webhooks/shopify/orders-create
    ```
-3. Copy the **webhook signing secret** Shopify shows (bottom of the Webhooks page) and paste it into **Super Admin → Settings → Shopify → Webhook Signing Secret**. Requests with an invalid HMAC signature are rejected with 401.
+3. Shopify signs `orders/create` with the OAuth app **Client Secret** entered in **Super Admin → Settings → Shopify**. No separate webhook secret is needed for a normal OAuth connection. Requests with an invalid HMAC signature are rejected with 401.
 4. Test with "Send test notification" — the API logs a warning if the signature doesn't match, and records the order when it does. Orders that don't contain any synced platform product are skipped (logged).
 
 If webhooks can't reach your server (e.g. during local development), completed Shopify orders simply won't appear in the platform; sync and checkout still work.

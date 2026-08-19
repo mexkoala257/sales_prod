@@ -24,11 +24,16 @@ import {
   b2bClientsTable,
   storesTable,
 } from "@workspace/db";
-import { eq, and, isNotNull, inArray } from "drizzle-orm";
+import { eq, and, isNotNull, inArray, sql } from "drizzle-orm";
 import { getSetting, upsertSettings } from "./settings";
 import { logger } from "./logger";
 
-const API_VERSION = "2024-01";
+// The REST helper remains for legacy reads and draft-order support while those
+// paths are migrated. Product and collection writes use the current Admin
+// GraphQL API below, because Shopify no longer supports REST product writes for
+// newly created apps.
+const API_VERSION = "2024-10";
+const ADMIN_GRAPHQL_VERSION = "2026-01";
 
 // ── Config ────────────────────────────────────────────────────────────────
 
@@ -40,7 +45,11 @@ export interface ShopifyConfig {
 
 /** Normalizes a store URL to a bare hostname (strips protocol/trailing slash). */
 function normalizeStoreUrl(url: string): string {
-  return url.trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "").toLowerCase();
+  const host = url.trim().replace(/^https?:\/\//i, "").replace(/\/.*$/, "").toLowerCase();
+  if (!/^[a-z0-9][a-z0-9-]*\.myshopify\.com$/.test(host)) {
+    throw new Error("Shopify store URL must be a valid *.myshopify.com domain.");
+  }
+  return host;
 }
 
 export async function getShopifyConfig(): Promise<ShopifyConfig | null> {
@@ -50,8 +59,15 @@ export async function getShopifyConfig(): Promise<ShopifyConfig | null> {
     getSetting("shopifyStorefrontToken"),
   ]);
   if (!storeUrl) return null;
+  let normalizedStoreUrl: string;
+  try {
+    normalizedStoreUrl = normalizeStoreUrl(storeUrl);
+  } catch (err) {
+    logger.warn({ err }, "Ignoring invalid Shopify store URL");
+    return null;
+  }
   return {
-    storeUrl: normalizeStoreUrl(storeUrl),
+    storeUrl: normalizedStoreUrl,
     adminToken: adminToken ?? "",
     storefrontToken: storefrontToken ?? "",
   };
@@ -131,6 +147,56 @@ async function adminPost<T>(config: ShopifyConfig, path: string, payload: unknow
     throw new Error(`Shopify Admin API ${res.status} for ${path}: ${body.slice(0, 300)}`);
   }
   return res.json() as Promise<T>;
+}
+
+async function adminPut<T>(config: ShopifyConfig, path: string, payload: unknown): Promise<T> {
+  const url = `https://${config.storeUrl}/admin/api/${API_VERSION}/${path}`;
+  const res = await fetch(url, {
+    method: "PUT",
+    headers: {
+      "X-Shopify-Access-Token": config.adminToken,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+  });
+  if (!res.ok) {
+    const body = await res.text();
+    throw new Error(`Shopify Admin API ${res.status} for ${path}: ${body.slice(0, 300)}`);
+  }
+  return res.json() as Promise<T>;
+}
+
+async function adminGraphql<T>(
+  config: ShopifyConfig,
+  query: string,
+  variables: Record<string, unknown>,
+): Promise<T> {
+  const url = `https://${config.storeUrl}/admin/api/${ADMIN_GRAPHQL_VERSION}/graphql.json`;
+  const res = await fetch(url, {
+    method: "POST",
+    headers: {
+      "X-Shopify-Access-Token": config.adminToken,
+      "Content-Type": "application/json",
+    },
+    body: JSON.stringify({ query, variables }),
+  });
+  const body = await res.text();
+  if (!res.ok) {
+    if (res.status === 401 || res.status === 403) {
+      throw new Error(
+        "Shopify denied product write access. A super admin must re-connect Shopify to approve the write_products permission, then retry.",
+      );
+    }
+    throw new Error(`Shopify Admin GraphQL ${res.status}: ${body.slice(0, 300)}`);
+  }
+  const response = JSON.parse(body) as { data?: T; errors?: Array<{ message?: string }> };
+  if (response.errors?.length) {
+    throw new Error(`Shopify Admin GraphQL: ${response.errors[0]?.message ?? "unknown error"}`);
+  }
+  if (!response.data) {
+    throw new Error("Shopify Admin GraphQL returned no data.");
+  }
+  return response.data;
 }
 
 // ── Shopify API shapes (subset) ───────────────────────────────────────────
@@ -226,28 +292,62 @@ export interface SyncSummary {
 
 let syncInProgress = false;
 
-export async function syncShopifyCatalog(): Promise<SyncSummary> {
+async function tryAcquireShopifyLock(key: string): Promise<boolean> {
+  const result = await db.execute<{ locked: boolean }>(
+    sql`SELECT pg_try_advisory_lock(hashtext(${key})) AS locked`,
+  );
+  return result.rows[0]?.locked === true;
+}
+
+async function releaseShopifyLock(key: string): Promise<void> {
+  await db.execute(sql`SELECT pg_advisory_unlock(hashtext(${key}))`);
+}
+
+export async function syncShopifyCatalog(storeId?: number): Promise<SyncSummary> {
   if (syncInProgress) {
     return { success: false, message: "A sync is already running.", productsCreated: 0, productsUpdated: 0, errors: 0, syncedAt: new Date().toISOString() };
   }
   syncInProgress = true;
+  // A store-scoped manual import and the scheduled all-store import touch the
+  // same Shopify catalog, so they deliberately share one distributed lock.
+  const lockKey = "shopify-catalog-sync";
+  let acquired = false;
   try {
-    return await doSync();
+    acquired = await tryAcquireShopifyLock(lockKey);
+    if (!acquired) {
+      return { success: false, message: "A catalog sync is already running on another server.", productsCreated: 0, productsUpdated: 0, errors: 0, syncedAt: new Date().toISOString() };
+    }
+    return await doSync(storeId);
   } finally {
+    if (acquired) {
+      await releaseShopifyLock(lockKey).catch((err) => logger.warn({ err, lockKey }, "Could not release Shopify catalog lock"));
+    }
     syncInProgress = false;
   }
 }
 
-async function doSync(): Promise<SyncSummary> {
+async function doSync(storeId?: number): Promise<SyncSummary> {
   const syncedAt = new Date().toISOString();
   const config = await getShopifyConfig();
   if (!config || !config.adminToken) {
     return { success: false, message: "Shopify is not configured.", productsCreated: 0, productsUpdated: 0, errors: 0, syncedAt };
   }
 
-  const mappings = await db.select().from(shopifyCollectionStoreMappingsTable);
+  const allMappings = await db.select().from(shopifyCollectionStoreMappingsTable);
+  const mappings = storeId === undefined
+    ? allMappings
+    : allMappings.filter((mapping) => mapping.storeId === storeId);
   if (mappings.length === 0) {
-    return { success: false, message: "No collection→store mappings configured. Map at least one collection to a store first.", productsCreated: 0, productsUpdated: 0, errors: 0, syncedAt };
+    return {
+      success: false,
+      message: storeId === undefined
+        ? "No collection→store mappings configured. Map at least one collection to a store first."
+        : "This storefront has no Shopify collection mappings. Ask a super admin to map a collection to this storefront first.",
+      productsCreated: 0,
+      productsUpdated: 0,
+      errors: 0,
+      syncedAt,
+    };
   }
 
   let created = 0;
@@ -319,9 +419,13 @@ async function doSync(): Promise<SyncSummary> {
       .from(productsTable)
       .where(eq(productsTable.shopifySynced, true));
     for (const row of syncedRows) {
+       if (storeId !== undefined && row.storeId !== storeId) continue;
       if (storesWithUnknownMembership.has(row.storeId)) continue;
       const stillTargeted = row.shopifyProductId !== null && (storesByProduct.get(row.shopifyProductId)?.has(row.storeId) ?? false);
-      if (!stillTargeted && row.status !== "disabled") {
+       // A missing Shopify id means this is a local-only product. It must never
+       // be disabled because a previous push failed or an older app version
+       // incorrectly marked it as synced without establishing a real link.
+       if (row.shopifyProductId !== null && !stillTargeted && row.status !== "disabled") {
         await db.update(productsTable).set({ status: "disabled" }).where(eq(productsTable.id, row.id));
         disabled += 1;
       }
@@ -357,6 +461,420 @@ function stripHtml(html: string | null): string | null {
   return html.replace(/<[^>]*>/g, "").trim() || null;
 }
 
+type PlatformProduct = typeof productsTable.$inferSelect;
+type PlatformVariant = typeof productVariantsTable.$inferSelect;
+type PlatformImage = typeof productImagesTable.$inferSelect;
+
+function localStatusToShopify(status: string): "ACTIVE" | "DRAFT" {
+  return status === "active" ? "ACTIVE" : "DRAFT";
+}
+
+function shopifyProductInput(
+  product: PlatformProduct,
+) {
+  return {
+    title: product.name,
+    descriptionHtml: product.description ?? "",
+    status: localStatusToShopify(product.status),
+  };
+}
+
+function toShopifyGid(resource: "Product" | "ProductVariant" | "Collection", id: string | number): string {
+  const value = String(id);
+  return value.startsWith("gid://") ? value : `gid://shopify/${resource}/${value}`;
+}
+
+interface ShopifyGraphqlUserError {
+  field?: string[];
+  message: string;
+}
+
+interface ShopifyGraphqlProduct {
+  id: string;
+  legacyResourceId: string;
+  variants: {
+    nodes: Array<{ id: string; legacyResourceId: string }>;
+  };
+}
+
+interface VariantOptionPlan {
+  optionNames: string[];
+  productOptions?: Array<{ name: string; values: Array<{ name: string }> }>;
+}
+
+function variantOptionPlan(variants: PlatformVariant[]): VariantOptionPlan {
+  if (variants.length <= 1) return { optionNames: [] };
+  const hasColor = variants.some((variant) => !!variant.color);
+  const hasSize = variants.some((variant) => !!variant.size);
+  if (!hasColor && !hasSize) {
+    return {
+      optionNames: ["Title"],
+      productOptions: [{ name: "Title", values: variants.map((variant) => ({ name: variant.sku })) }],
+    };
+  }
+  const options: Array<{ name: string; values: Array<{ name: string }> }> = [];
+  if (hasColor) {
+    options.push({ name: "Color", values: [...new Set(variants.map((variant) => variant.color || "Default"))].map((name) => ({ name })) });
+  }
+  if (hasSize) {
+    options.push({ name: "Size", values: [...new Set(variants.map((variant) => variant.size || "Default"))].map((name) => ({ name })) });
+  }
+  return { optionNames: options.map((option) => option.name), productOptions: options };
+}
+
+function variantInput(product: PlatformProduct, variant: PlatformVariant, optionNames: string[], id?: string) {
+  const optionValues = optionNames.map((optionName) => ({
+    optionName,
+    name: optionName === "Color"
+      ? variant.color || "Default"
+      : optionName === "Size"
+        ? variant.size || "Default"
+        : variant.sku,
+  }));
+  return {
+    ...(id ? { id: toShopifyGid("ProductVariant", id) } : {}),
+    price: String(variant.price ?? product.price),
+    ...(product.compareAtPrice ? { compareAtPrice: String(product.compareAtPrice) } : {}),
+    inventoryItem: { sku: variant.sku },
+    ...(optionValues.length > 0 ? { optionValues } : {}),
+  };
+}
+
+function throwForUserErrors(errors: ShopifyGraphqlUserError[], action: string): void {
+  if (errors.length > 0) {
+    throw new Error(`Shopify could not ${action}: ${errors.map((error) => error.message).join("; ")}`);
+  }
+}
+
+async function createProductWithGraphql(
+  config: ShopifyConfig,
+  product: PlatformProduct,
+  variants: PlatformVariant[],
+  images: PlatformImage[],
+): Promise<ShopifyGraphqlProduct> {
+  const optionPlan = variantOptionPlan(variants);
+  const data = await adminGraphql<{
+    productCreate: { product: ShopifyGraphqlProduct | null; userErrors: ShopifyGraphqlUserError[] };
+  }>(
+    config,
+    `mutation ProductCreate($product: ProductCreateInput!, $media: [CreateMediaInput!]) {
+      productCreate(product: $product, media: $media) {
+        product {
+          id
+          legacyResourceId
+          variants(first: 1) {
+            nodes { id legacyResourceId }
+          }
+        }
+        userErrors { field message }
+      }
+    }`,
+    {
+      product: {
+        ...shopifyProductInput(product),
+        ...(optionPlan.productOptions ? { productOptions: optionPlan.productOptions } : {}),
+      },
+      media: images.map((image) => ({
+        originalSource: image.url,
+        mediaContentType: "IMAGE",
+        ...(image.altText ? { alt: image.altText } : {}),
+      })),
+    },
+  );
+  throwForUserErrors(data.productCreate.userErrors, "create this product");
+  if (!data.productCreate.product) {
+    throw new Error("Shopify did not return the newly created product.");
+  }
+  return data.productCreate.product;
+}
+
+async function updateProductWithGraphql(
+  config: ShopifyConfig,
+  product: PlatformProduct,
+): Promise<void> {
+  const data = await adminGraphql<{
+    productUpdate: { userErrors: ShopifyGraphqlUserError[] };
+  }>(
+    config,
+    `mutation ProductUpdate($product: ProductUpdateInput!) {
+      productUpdate(product: $product) {
+        userErrors { field message }
+      }
+    }`,
+    {
+      product: {
+        id: toShopifyGid("Product", product.shopifyProductId!),
+        ...shopifyProductInput(product),
+      },
+    },
+  );
+  throwForUserErrors(data.productUpdate.userErrors, "update this product");
+}
+
+async function mappedCustomCollectionIds(config: ShopifyConfig, storeId: number): Promise<string[]> {
+  const mappings = await db
+    .select({ collectionId: shopifyCollectionStoreMappingsTable.collectionId })
+    .from(shopifyCollectionStoreMappingsTable)
+    .where(eq(shopifyCollectionStoreMappingsTable.storeId, storeId));
+
+  if (mappings.length === 0) {
+    return [];
+  }
+
+  const customCollections = await adminGetAllPages<{ custom_collections: ShopifyCollection[] }, ShopifyCollection>(
+    config,
+    "custom_collections.json?limit=250",
+    (page) => page.custom_collections,
+  );
+  const customIds = new Set(customCollections.map((collection) => String(collection.id)));
+  return mappings.map((mapping) => mapping.collectionId).filter((id) => customIds.has(id));
+}
+
+async function addProductToCollections(
+  config: ShopifyConfig,
+  productId: string,
+  collectionIds: string[],
+): Promise<void> {
+  for (const collectionId of collectionIds) {
+    const data = await adminGraphql<{
+      collectionAddProducts: { userErrors: ShopifyGraphqlUserError[] };
+    }>(
+      config,
+      `mutation CollectionAddProducts($id: ID!, $productIds: [ID!]!) {
+        collectionAddProducts(id: $id, productIds: $productIds) {
+          userErrors { field message }
+        }
+      }`,
+      {
+        id: toShopifyGid("Collection", collectionId),
+        productIds: [toShopifyGid("Product", productId)],
+      },
+    );
+    const nonDuplicateErrors = data.collectionAddProducts.userErrors.filter((error) => {
+      const message = error.message.toLowerCase();
+      return !message.includes("already") && !message.includes("exists");
+    });
+    if (nonDuplicateErrors.length > 0) {
+      throwForUserErrors(nonDuplicateErrors, "add this product to its mapped collection");
+    }
+  }
+}
+
+async function productOptionNames(
+  config: ShopifyConfig,
+  product: PlatformProduct,
+): Promise<string[]> {
+  const data = await adminGraphql<{ product: { options: Array<{ name: string }> } | null }>(
+    config,
+    `query ProductOptions($id: ID!) { product(id: $id) { options { name } } }`,
+    { id: toShopifyGid("Product", product.shopifyProductId!) },
+  );
+  return data.product?.options.map((option) => option.name) ?? [];
+}
+
+async function syncVariantsWithGraphql(
+  config: ShopifyConfig,
+  product: PlatformProduct,
+  variants: PlatformVariant[],
+  optionNames?: string[],
+): Promise<void> {
+  const names = optionNames ?? await productOptionNames(config, product);
+  const linked = variants.filter((variant) => variant.shopifyVariantId);
+  if (linked.length > 0) {
+    const data = await adminGraphql<{
+      productVariantsBulkUpdate: { userErrors: ShopifyGraphqlUserError[] };
+    }>(
+      config,
+      `mutation ProductVariantsBulkUpdate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+        productVariantsBulkUpdate(productId: $productId, variants: $variants) {
+          userErrors { field message }
+        }
+      }`,
+      {
+        productId: toShopifyGid("Product", product.shopifyProductId!),
+        variants: linked.map((variant) => variantInput(product, variant, names, variant.shopifyVariantId!)),
+      },
+    );
+    throwForUserErrors(data.productVariantsBulkUpdate.userErrors, "update product variants");
+  }
+
+  const unlinked = variants.filter((variant) => !variant.shopifyVariantId);
+  if (unlinked.length > 0) {
+    const data = await adminGraphql<{
+      productVariantsBulkCreate: {
+        productVariants: Array<{ legacyResourceId: string }>;
+        userErrors: ShopifyGraphqlUserError[];
+      };
+    }>(
+      config,
+      `mutation ProductVariantsBulkCreate($productId: ID!, $variants: [ProductVariantsBulkInput!]!) {
+        productVariantsBulkCreate(productId: $productId, variants: $variants) {
+          productVariants { legacyResourceId }
+          userErrors { field message }
+        }
+      }`,
+      {
+        productId: toShopifyGid("Product", product.shopifyProductId!),
+        variants: unlinked.map((variant) => variantInput(product, variant, names)),
+      },
+    );
+    throwForUserErrors(data.productVariantsBulkCreate.userErrors, "create product variants");
+    for (let index = 0; index < unlinked.length; index += 1) {
+      const remote = data.productVariantsBulkCreate.productVariants[index];
+      if (!remote) continue;
+      await db.update(productVariantsTable).set({ shopifyVariantId: remote.legacyResourceId })
+        .where(eq(productVariantsTable.id, unlinked[index].id));
+    }
+  }
+
+  // Local editing is authoritative for a pushed product. Query Shopify after
+  // creates/updates so variants removed in the platform are not reintroduced
+  // by a later pull-sync.
+  const retained = await db
+    .select({ shopifyVariantId: productVariantsTable.shopifyVariantId })
+    .from(productVariantsTable)
+    .where(eq(productVariantsTable.productId, product.id));
+  const retainedIds = new Set(retained.flatMap((variant) => variant.shopifyVariantId ? [variant.shopifyVariantId] : []));
+  const remote = await adminGraphql<{
+    product: { variants: { nodes: Array<{ id: string; legacyResourceId: string }> } } | null;
+  }>(
+    config,
+    `query ProductVariants($id: ID!) {
+      product(id: $id) { variants(first: 250) { nodes { id legacyResourceId } } }
+    }`,
+    { id: toShopifyGid("Product", product.shopifyProductId!) },
+  );
+  const staleVariantIds = remote.product?.variants.nodes
+    .filter((variant) => !retainedIds.has(variant.legacyResourceId))
+    .map((variant) => variant.id) ?? [];
+  if (staleVariantIds.length > 0 && retainedIds.size > 0) {
+    const deletion = await adminGraphql<{
+      productVariantsBulkDelete: { userErrors: ShopifyGraphqlUserError[] };
+    }>(
+      config,
+      `mutation ProductVariantsBulkDelete($productId: ID!, $variantsIds: [ID!]!) {
+        productVariantsBulkDelete(productId: $productId, variantsIds: $variantsIds) {
+          userErrors { field message }
+        }
+      }`,
+      {
+        productId: toShopifyGid("Product", product.shopifyProductId!),
+        variantsIds: staleVariantIds,
+      },
+    );
+    throwForUserErrors(deletion.productVariantsBulkDelete.userErrors, "remove retired product variants");
+  }
+}
+
+/**
+ * Pushes one store-admin product into Shopify. A new product is placed in all
+ * mapped manual collections for its storefront, which keeps it eligible for
+ * subsequent pull-syncs. Smart collection membership remains controlled by
+ * Shopify's rules and cannot be assigned directly.
+ */
+export async function pushProductToShopify(storeId: number, productId: number): Promise<{ created: boolean; shopifyProductId: string }> {
+  const lockKey = `shopify-product-push:${storeId}:${productId}`;
+  if (!await tryAcquireShopifyLock(lockKey)) {
+    throw new Error("This product is already being synchronized by another server. Please wait and try again.");
+  }
+  try {
+    return await pushProductToShopifyUnlocked(storeId, productId);
+  } finally {
+    await releaseShopifyLock(lockKey).catch((err) => logger.warn({ err, lockKey }, "Could not release Shopify product lock"));
+  }
+}
+
+async function pushProductToShopifyUnlocked(storeId: number, productId: number): Promise<{ created: boolean; shopifyProductId: string }> {
+  const config = await getShopifyConfig();
+  if (!config?.adminToken) {
+    throw new Error("Shopify is not connected. A super admin must connect Shopify before products can sync.");
+  }
+
+  const [product] = await db
+    .select()
+    .from(productsTable)
+    .where(and(eq(productsTable.id, productId), eq(productsTable.storeId, storeId)));
+  if (!product) {
+    throw new Error("Product not found for this storefront.");
+  }
+
+  const [variants, images] = await Promise.all([
+    db.select().from(productVariantsTable).where(eq(productVariantsTable.productId, productId)),
+    db.select().from(productImagesTable).where(eq(productImagesTable.productId, productId)),
+  ]);
+  // Earlier builds exposed a simulated "sync" control which marked products
+  // as synced without receiving a Shopify id. That impossible combination is
+  // repaired on the first real push so the product is not kept disabled.
+  const productForPush = product.shopifySynced && !product.shopifyProductId
+    ? { ...product, status: "active" }
+    : product;
+
+  if (product.shopifyProductId) {
+    await updateProductWithGraphql(config, productForPush);
+    await syncVariantsWithGraphql(config, productForPush, variants);
+    await db
+      .update(productsTable)
+      .set({ shopifySynced: true })
+      .where(eq(productsTable.id, product.id));
+    logger.info({ productId, storeId, shopifyProductId: product.shopifyProductId }, "Updated platform product in Shopify");
+    return { created: false, shopifyProductId: product.shopifyProductId };
+  }
+
+  const collectionIds = await mappedCustomCollectionIds(config, storeId);
+  if (collectionIds.length === 0) {
+    throw new Error(
+      "This storefront has no mapped manual Shopify collection. Map a manual collection to the storefront in Super Admin → Settings before creating products from the platform.",
+    );
+  }
+
+  const created = await createProductWithGraphql(config, productForPush, variants, images);
+
+  try {
+    await addProductToCollections(config, created.legacyResourceId, collectionIds);
+  } catch (err) {
+    logger.error({ err, productId, storeId, shopifyProductId: created.legacyResourceId }, "Created Shopify product but could not add it to mapped collections");
+    throw new Error(
+      "Shopify created the product but could not add it to this storefront's mapped collection. Add it to a mapped manual collection in Shopify, then run an import.",
+    );
+  }
+
+  await db
+    .update(productsTable)
+    .set({
+      shopifyProductId: created.legacyResourceId,
+      shopifySynced: true,
+      // Repair the invalid state produced by the previous simulated sync:
+      // a product without an external id cannot be treated as disabled by sync.
+      status: productForPush.status,
+    })
+    .where(eq(productsTable.id, product.id));
+  const defaultVariant = created.variants.nodes[0];
+  if (variants[0] && defaultVariant) {
+    await db
+      .update(productVariantsTable)
+      .set({ shopifyVariantId: defaultVariant.legacyResourceId })
+      .where(eq(productVariantsTable.id, variants[0].id));
+  }
+  // productCreate always gives Shopify one default variant. Update that exact
+  // variant with the first local record, then create only the remaining local
+  // variants. Keeping the ID in memory prevents the default from being created
+  // a second time during this same push.
+  const variantsWithDefaultLink = variants.map((variant, index) =>
+    index === 0 && defaultVariant
+      ? { ...variant, shopifyVariantId: defaultVariant.legacyResourceId }
+      : variant,
+  );
+  await syncVariantsWithGraphql(
+    config,
+    { ...productForPush, shopifyProductId: created.legacyResourceId },
+    variantsWithDefaultLink,
+    variantOptionPlan(variants).optionNames,
+  );
+
+  logger.info({ productId, storeId, shopifyProductId: created.legacyResourceId }, "Created platform product in Shopify");
+  return { created: true, shopifyProductId: created.legacyResourceId };
+}
+
 async function upsertProduct(storeId: number, sp: ShopifyProduct): Promise<"created" | "updated"> {
   const shopifyId = String(sp.id);
   const price = sp.variants[0]?.price ?? "0";
@@ -383,7 +901,7 @@ async function upsertProduct(storeId: number, sp: ShopifyProduct): Promise<"crea
     productId = existing.id;
     mode = "updated";
   } else {
-    const [row] = await db.insert(productsTable).values({
+    const values = {
       storeId,
       name: sp.title,
       description: stripHtml(sp.body_html),
@@ -393,9 +911,30 @@ async function upsertProduct(storeId: number, sp: ShopifyProduct): Promise<"crea
       channel: "all",
       shopifyProductId: shopifyId,
       shopifySynced: true,
-    }).returning();
-    productId = row.id;
-    mode = "created";
+    };
+    try {
+      const [row] = await db.insert(productsTable).values(values).returning();
+      productId = row.id;
+      mode = "created";
+    } catch (err) {
+      // The database uniqueness constraint is the final safeguard when a
+      // deployment is scaled while a previous replica still holds stale work.
+      const [winner] = await db
+        .select()
+        .from(productsTable)
+        .where(and(eq(productsTable.storeId, storeId), eq(productsTable.shopifyProductId, shopifyId)));
+      if (!winner) throw err;
+      await db.update(productsTable).set({
+        name: values.name,
+        description: values.description,
+        price: values.price,
+        compareAtPrice: values.compareAtPrice,
+        status: values.status,
+        shopifySynced: true,
+      }).where(eq(productsTable.id, winner.id));
+      productId = winner.id;
+      mode = "updated";
+    }
   }
 
   // Variants: upsert by shopify_variant_id, remove synced variants that vanished
@@ -535,9 +1074,10 @@ export async function createShopifyCheckout(items: CheckoutLineItem[], platformS
 
 export async function verifyShopifyWebhookHmac(rawBody: Buffer, hmacHeader: string | undefined): Promise<boolean> {
   if (!hmacHeader) return false;
-  // Shared secret: dedicated webhook secret if set, else the Admin token (Shopify
-  // uses the app's API secret; for custom apps operators paste it into settings).
-  const secret = (await getSetting("shopifyWebhookSecret")) || (await getSetting("shopifyAdminToken"));
+  // Shopify signs standard app webhooks with the OAuth app client secret. The
+  // legacy webhook setting is only a fallback for stores migrated from an older
+  // custom integration; it must never fall back to an access token.
+  const secret = (await getSetting("shopifyClientSecret")) || (await getSetting("shopifyWebhookSecret"));
   if (!secret) return false;
   const digest = createHmac("sha256", secret).update(rawBody).digest("base64");
   const a = Buffer.from(digest);

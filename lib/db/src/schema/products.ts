@@ -1,4 +1,5 @@
-import { pgTable, text, serial, boolean, timestamp, integer, numeric, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp, integer, numeric, primaryKey, uniqueIndex } from "drizzle-orm/pg-core";
+import { isNotNull } from "drizzle-orm";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -16,7 +17,11 @@ export const productsTable = pgTable("products", {
   shopifyProductId: text("shopify_product_id"),
   shopifySynced: boolean("shopify_synced").notNull().default(false),
   createdAt: timestamp("created_at", { withTimezone: true }).notNull().defaultNow(),
-});
+}, (table) => [
+  uniqueIndex("products_store_shopify_product_unique")
+    .on(table.storeId, table.shopifyProductId)
+    .where(isNotNull(table.shopifyProductId)),
+]);
 
 export const productVariantsTable = pgTable("product_variants", {
   id: serial("id").primaryKey(),

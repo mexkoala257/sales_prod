@@ -167,6 +167,9 @@ export default function AdminProductForm() {
         <Card className="rounded-none">
           <CardHeader>
             <CardTitle>Variant & Inventory Matrix</CardTitle>
+            <p className="text-sm text-muted-foreground">
+              Inventory is catalog data. Update stock in Shopify to control checkout availability.
+            </p>
           </CardHeader>
           <CardContent className="space-y-4">
             {formData.variants.map((v, i) => (

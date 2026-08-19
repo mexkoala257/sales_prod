@@ -26,6 +26,7 @@ import {
   SetB2BClientProductsBody,
   UpdateOrderStatusBody,
 } from "@workspace/api-zod";
+import { pushProductToShopify, syncShopifyCatalog } from "../lib/shopify";
 
 const router: IRouter = Router();
 
@@ -125,10 +126,10 @@ router.post("/admin/products", requireStoreAdmin, async (req, res): Promise<void
   const [product] = await db.insert(productsTable).values({ ...productData, storeId }).returning();
 
   if (variants.length > 0) {
-    await db.insert(productVariantsTable).values(variants.map((v: any) => ({ ...v, productId: product.id })));
+    await db.insert(productVariantsTable).values(variants.map(({ id: _id, ...v }: any) => ({ ...v, productId: product.id })));
   }
   if (images.length > 0) {
-    await db.insert(productImagesTable).values(images.map((img: any) => ({ ...img, productId: product.id })));
+    await db.insert(productImagesTable).values(images.map(({ id: _id, ...img }: any) => ({ ...img, productId: product.id })));
   }
   if (categoryIds.length > 0) {
     await db.insert(productCategoriesTable).values(categoryIds.map((cId: number) => ({ productId: product.id, categoryId: cId })));
@@ -138,13 +139,18 @@ router.post("/admin/products", requireStoreAdmin, async (req, res): Promise<void
   res.status(201).json(full);
 });
 
-router.get("/admin/products/import-shopify", requireStoreAdmin, async (_req, res): Promise<void> => {
-  // Demo mode — stub
-  res.json({ success: true, message: "Demo mode: Shopify import simulated. Connect real credentials to sync.", synced: 0, errors: 0 });
-});
-
-router.post("/admin/products/import-shopify", requireStoreAdmin, async (_req, res): Promise<void> => {
-  res.json({ success: true, message: "Demo mode: Shopify import simulated. Connect real credentials to sync.", synced: 0, errors: 0 });
+router.post("/admin/products/import-shopify", requireStoreAdmin, async (req, res): Promise<void> => {
+  const summary = await syncShopifyCatalog(getStoreId(req));
+  if (!summary.success) {
+    res.status(502).json({ error: summary.message });
+    return;
+  }
+  res.json({
+    success: true,
+    message: summary.message,
+    synced: summary.productsCreated + summary.productsUpdated,
+    errors: summary.errors,
+  });
 });
 
 router.get("/admin/products/:productId", requireStoreAdmin, async (req, res): Promise<void> => {
@@ -166,15 +172,23 @@ router.patch("/admin/products/:productId", requireStoreAdmin, async (req, res): 
   await db.update(productsTable).set(productData).where(and(eq(productsTable.id, id), eq(productsTable.storeId, storeId)));
 
   if (variants !== undefined) {
+    const existingVariants = await db.select().from(productVariantsTable).where(eq(productVariantsTable.productId, id));
+    const existingById = new Map(existingVariants.map((variant) => [variant.id, variant]));
     await db.delete(productVariantsTable).where(eq(productVariantsTable.productId, id));
     if (variants.length > 0) {
-      await db.insert(productVariantsTable).values(variants.map((v: any) => ({ ...v, productId: id })));
+      await db.insert(productVariantsTable).values(variants.map(({ id: variantId, ...variant }: any) => ({
+        ...variant,
+        productId: id,
+        ...(variantId && existingById.get(variantId)?.shopifyVariantId
+          ? { shopifyVariantId: existingById.get(variantId)!.shopifyVariantId }
+          : {}),
+      })));
     }
   }
   if (images !== undefined) {
     await db.delete(productImagesTable).where(eq(productImagesTable.productId, id));
     if (images.length > 0) {
-      await db.insert(productImagesTable).values(images.map((img: any) => ({ ...img, productId: id })));
+      await db.insert(productImagesTable).values(images.map(({ id: _id, ...img }: any) => ({ ...img, productId: id })));
     }
   }
   if (categoryIds !== undefined) {
@@ -199,9 +213,21 @@ router.delete("/admin/products/:productId", requireStoreAdmin, async (req, res):
 router.post("/admin/products/:productId/sync-shopify", requireStoreAdmin, async (req, res): Promise<void> => {
   const storeId = getStoreId(req);
   const id = parseInt(req.params.productId as string, 10);
-  // Demo mode stub
-  await db.update(productsTable).set({ shopifySynced: true }).where(and(eq(productsTable.id, id), eq(productsTable.storeId, storeId)));
-  res.json({ success: true, message: "Demo mode: Product synced to Shopify (simulated).", synced: 1, errors: 0 });
+  try {
+    const result = await pushProductToShopify(storeId, id);
+    res.json({
+      success: true,
+      message: result.created
+        ? "Product, its variants, and its current images were created in Shopify and linked to this storefront."
+        : "Product details and variants were sent to Shopify. Retired variants were removed; existing Shopify images and checkout inventory are unchanged.",
+      synced: 1,
+      errors: 0,
+    });
+  } catch (err) {
+    const message = err instanceof Error ? err.message : String(err);
+    req.log.error({ err, productId: id, storeId }, "Product sync to Shopify failed");
+    res.status(502).json({ error: message });
+  }
 });
 
 // ── Categories ────────────────────────────────────────────────────

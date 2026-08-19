@@ -286,18 +286,19 @@ function ShopifyConnectionCard({
           <p className="text-xs font-semibold uppercase tracking-widest text-muted-foreground">Step 3 — Additional settings</p>
           {!oauthStatus?.hasStorefrontToken && (
             <SettingField id="shopifyStorefrontToken" label="Storefront API Token (manual)"
+              isSecret
               description="Only needed if auto-creation failed during OAuth. Find it in Dev Dashboard → Settings."
               value={values['shopifyStorefrontToken'] ?? ''} onChange={set('shopifyStorefrontToken')} />
           )}
-          <SettingField id="shopifyWebhookSecret" label="Webhook Signing Secret" isSecret
-            description="From Shopify Admin → Settings → Notifications → Webhooks. Verifies orders/create webhooks."
+          <SettingField id="shopifyWebhookSecret" label="Legacy Webhook Secret (optional)" isSecret
+            description="Leave blank for OAuth apps: Shopify signs orders/create with the Client Secret entered above. Use only for a migrated legacy integration."
             value={values['shopifyWebhookSecret'] ?? ''} onChange={set('shopifyWebhookSecret')} />
           <SettingField id="shopifySyncIntervalMinutes" label="Background Sync Interval (minutes)" placeholder="60"
             type="number" description="How often the catalog syncs automatically. Minimum 5."
             value={values['shopifySyncIntervalMinutes'] ?? ''} onChange={set('shopifySyncIntervalMinutes')} />
           <Button size="sm" variant="outline"
             onClick={() => saveSection('Shopify settings', [
-              { key: 'shopifyStorefrontToken' },
+              { key: 'shopifyStorefrontToken', isSecret: true },
               { key: 'shopifyWebhookSecret', isSecret: true },
               { key: 'shopifySyncIntervalMinutes' },
             ])}

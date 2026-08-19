@@ -9,6 +9,7 @@
 import { createCipheriv, createDecipheriv, randomBytes, scryptSync } from "node:crypto";
 import { db } from "@workspace/db";
 import { platformSettingsTable } from "@workspace/db";
+import { eq } from "drizzle-orm";
 
 const ALGORITHM = "aes-256-gcm";
 const CACHE_TTL_MS = 30_000;
@@ -96,6 +97,25 @@ export async function getSetting(key: string, fallback?: string): Promise<string
 // ── Read all ──────────────────────────────────────────────────────────────────
 
 const MASK = "••••••••";
+const LEGACY_SECRET_KEYS = new Set([
+  "shopifyAdminToken",
+  "shopifyStorefrontToken",
+  "shopifyClientSecret",
+  "shopifyWebhookSecret",
+]);
+
+async function migrateLegacySecretSettings(): Promise<void> {
+  const rows = await db.select().from(platformSettingsTable);
+  const plaintextSecrets = rows.filter((row) => LEGACY_SECRET_KEYS.has(row.key) && !row.isSecret && !!row.value);
+  if (plaintextSecrets.length === 0) return;
+  const now = new Date();
+  for (const row of plaintextSecrets) {
+    await db.update(platformSettingsTable)
+      .set({ value: encryptSecret(row.value), isSecret: true, updatedAt: now })
+      .where(eq(platformSettingsTable.key, row.key));
+  }
+  invalidateSettingsCache();
+}
 
 export interface SettingEntry {
   key: string;
@@ -106,6 +126,7 @@ export interface SettingEntry {
 }
 
 export async function getAllSettings(): Promise<SettingEntry[]> {
+  await migrateLegacySecretSettings();
   const rows = await db.select().from(platformSettingsTable);
   return rows.map((row) => ({
     key: row.key,
