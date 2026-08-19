@@ -164,7 +164,19 @@ function ShopifyConnectionCard({
     setConnecting(true);
     try {
       const result = await startShopifyOAuth() as { url: string };
-      window.location.href = result.url;
+      // Shopify's auth page blocks iframes (X-Frame-Options: SAMEORIGIN).
+      // When running inside an iframe (e.g. Replit preview), open a new tab.
+      // In production (top-level window), navigate in place.
+      if (window.top !== window.self) {
+        window.open(result.url, '_blank', 'noopener');
+        toast({
+          title: 'Shopify authorization opened',
+          description: 'Complete the approval in the new tab. This page will update once you return.',
+        });
+        setConnecting(false);
+      } else {
+        window.location.href = result.url;
+      }
     } catch {
       toast({ title: 'Could not start Shopify connection', description: 'Check that Store URL and Client ID are saved, then try again.', variant: 'destructive' });
       setConnecting(false);
