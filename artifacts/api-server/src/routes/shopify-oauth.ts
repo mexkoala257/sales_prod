@@ -23,10 +23,10 @@ import { logger } from "../lib/logger";
 
 const router: IRouter = Router();
 
+// Note: read_collections was removed by Shopify; collections are covered by read_products.
 const SCOPES = [
   "read_products",
   "read_product_listings",
-  "read_collections",
   "write_draft_orders",
   "read_draft_orders",
   "read_orders",
