@@ -1,70 +1,85 @@
 import { StorefrontLayout } from './Home';
-import { useListStorefrontProducts } from '@workspace/api-client-react';
+import { useListStorefrontCategories, useListStorefrontProducts } from '@workspace/api-client-react';
 import { useParams, Link } from 'wouter';
+import { Search, SlidersHorizontal, X } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { useStorefront } from '@/context/StorefrontContext';
+import { StorefrontImage } from '@/components/storefront-image';
+
+function Price({ value }: { value: number }) {
+  return <>{value.toLocaleString(undefined, { style: 'currency', currency: 'USD' })}</>;
+}
 
 export default function StorefrontProducts() {
   const { storeSlug: paramSlug } = useParams();
   const { slug: contextSlug, isCustomDomain, storePath: ctxStorePath } = useStorefront();
   const storeSlug = isCustomDomain ? (contextSlug ?? '') : (paramSlug ?? '');
   const sp = (p: string) => ctxStorePath(p, storeSlug);
-
+  const [search, setSearch] = useState('');
+  const [categoryId, setCategoryId] = useState<number | null>(null);
+  const [filtersOpen, setFiltersOpen] = useState(false);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: products, isLoading } = useListStorefrontProducts(storeSlug, { query: { enabled: !!storeSlug } as any });
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: categories } = useListStorefrontCategories(storeSlug, { query: { enabled: !!storeSlug } as any });
+  const filteredProducts = useMemo(() => (products || []).filter((product) => {
+    const matchesSearch = product.name.toLowerCase().includes(search.trim().toLowerCase());
+    const matchesCategory = categoryId === null || product.categories?.includes(categoryId);
+    return matchesSearch && matchesCategory;
+  }), [products, search, categoryId]);
+
+  const categoryMenu = (
+    <div className="space-y-5">
+      <div className="border-b border-stone-200 pb-4">
+        <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-stone-500">Browse</p>
+      </div>
+      <button type="button" onClick={() => setCategoryId(null)} className={`block text-left text-sm transition-opacity ${categoryId === null ? 'font-semibold text-stone-950' : 'text-stone-500 hover:text-stone-950'}`}>All products</button>
+      {categories?.map((category) => (
+        <button key={category.id} type="button" onClick={() => setCategoryId(category.id)} className={`flex w-full items-center justify-between text-left text-sm transition-opacity ${categoryId === category.id ? 'font-semibold text-stone-950' : 'text-stone-500 hover:text-stone-950'}`}>
+          <span>{category.name}</span><span className="text-xs tabular-nums text-stone-400">{category.productCount}</span>
+        </button>
+      ))}
+    </div>
+  );
 
   return (
     <StorefrontLayout>
-      <div className="container mx-auto px-4 py-12 md:py-24">
-        <div className="flex flex-col md:flex-row items-baseline justify-between mb-12 border-b pb-4">
-          <h1 className="text-3xl font-bold tracking-tight">All Products</h1>
-          <span className="text-muted-foreground text-sm font-mono mt-4 md:mt-0">{products?.length || 0} results</span>
-        </div>
-
-        <div className="flex flex-col md:flex-row gap-12">
-          <aside className="w-full md:w-64 shrink-0 space-y-8">
-            <div>
-              <h3 className="font-semibold text-sm uppercase tracking-widest mb-4">Categories</h3>
-              <ul className="space-y-3 text-sm text-zinc-600">
-                <li><a href="#" className="hover:text-zinc-900 transition-colors">All Shop</a></li>
-                <li><a href="#" className="hover:text-zinc-900 transition-colors">New Arrivals</a></li>
-                <li><a href="#" className="hover:text-zinc-900 transition-colors">Best Sellers</a></li>
-              </ul>
+      <div className="mx-auto max-w-[1440px] px-5 py-10 md:px-8 md:py-16">
+        <div className="border-b border-stone-200 pb-8 md:pb-10">
+          <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500">Browse the collection</p>
+          <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+            <div><h1 className="text-5xl font-semibold tracking-[-0.06em] md:text-7xl">Shop all</h1><p className="mt-3 text-sm text-stone-500">{filteredProducts.length} {filteredProducts.length === 1 ? 'piece' : 'pieces'} selected for you</p></div>
+            <div className="flex w-full gap-2 md:w-auto">
+              <div className="relative flex-1 md:w-72"><Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-stone-400" /><input value={search} onChange={(event) => setSearch(event.target.value)} placeholder="Search products" className="h-11 w-full border border-stone-300 bg-white pl-10 pr-3 text-sm outline-none transition focus:border-stone-900" /></div>
+              <button type="button" onClick={() => setFiltersOpen(true)} className="grid h-11 w-11 place-items-center border border-stone-300 md:hidden" aria-label="Open filters"><SlidersHorizontal className="h-4 w-4" /></button>
             </div>
-          </aside>
-
-          <div className="flex-1">
+          </div>
+        </div>
+        <div className="mt-10 grid gap-8 lg:grid-cols-[190px_minmax(0,1fr)]">
+          <aside className="hidden lg:block">{categoryMenu}</aside>
+          <div>
             {isLoading ? (
-              <div className="animate-pulse flex gap-8 flex-wrap">
-                {[1, 2, 3, 4].map((i) => <div key={i} className="w-64 h-96 bg-zinc-100" />)}
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8">
-                {products?.map((product) => (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-8 md:grid-cols-3 md:gap-x-6">{Array.from({ length: 9 }).map((_, index) => <div key={index} className="space-y-3"><div className="storefront-skeleton aspect-[4/5]" /><div className="storefront-skeleton h-4 w-3/4" /><div className="storefront-skeleton h-3 w-1/3" /></div>)}</div>
+            ) : filteredProducts.length ? (
+              <div className="grid grid-cols-2 gap-x-4 gap-y-9 md:grid-cols-3 md:gap-x-6">
+                {filteredProducts.map((product) => (
                   <Link key={product.id} href={sp(`/products/${product.id}`)} className="group block">
-                    <div className="aspect-[4/5] bg-zinc-100 overflow-hidden mb-4 relative">
-                      {product.images?.[0] ? (
-                        <img src={product.images[0].url} alt={product.name} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700 ease-out" />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-zinc-300 font-mono text-sm">No Image</div>
-                      )}
+                    <div className="relative mb-3 aspect-[4/5] overflow-hidden bg-stone-100">
+                      <StorefrontImage src={product.images?.[0]?.url} alt={product.images?.[0]?.altText || product.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.035]" />
+                      {product.preOrder && <span className="absolute left-3 top-3 bg-white px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.14em]">Pre-order</span>}
                     </div>
-                    <div className="space-y-1">
-                      <h3 className="font-medium text-sm">{product.name}</h3>
-                      <div className="font-mono text-sm text-zinc-500">${product.price.toLocaleString(undefined, { minimumFractionDigits: 2 })}</div>
-                    </div>
+                    <div className="flex gap-3"><h2 className="flex-1 text-sm font-medium leading-5">{product.name}</h2><span className="text-sm tabular-nums"><Price value={product.price} /></span></div>
+                    {product.compareAtPrice && product.compareAtPrice > product.price && <p className="mt-1 text-xs text-stone-400 line-through"><Price value={product.compareAtPrice} /></p>}
                   </Link>
                 ))}
               </div>
-            )}
-
-            {products?.length === 0 && (
-              <div className="py-24 text-center text-muted-foreground border bg-zinc-50">
-                No products found in this collection.
-              </div>
+            ) : (
+              <div className="border-y border-stone-200 py-24 text-center"><p className="font-serif text-2xl">Nothing found.</p><p className="mt-2 text-sm text-stone-500">Try another search or clear your filters.</p>{(search || categoryId !== null) && <button type="button" className="mt-6 text-xs font-bold uppercase tracking-[0.16em] underline underline-offset-4" onClick={() => { setSearch(''); setCategoryId(null); }}>Clear filters</button>}</div>
             )}
           </div>
         </div>
       </div>
+      {filtersOpen && <div className="fixed inset-0 z-[60] bg-stone-950/30 lg:hidden" onClick={() => setFiltersOpen(false)}><aside className="absolute left-0 top-0 h-full w-[min(320px,85vw)] bg-[#fcfcfa] p-6 shadow-xl" onClick={(event) => event.stopPropagation()}><div className="mb-10 flex items-center justify-between"><p className="text-sm font-semibold">Filters</p><button type="button" onClick={() => setFiltersOpen(false)} aria-label="Close filters"><X className="h-5 w-5" /></button></div>{categoryMenu}</aside></div>}
     </StorefrontLayout>
   );
 }

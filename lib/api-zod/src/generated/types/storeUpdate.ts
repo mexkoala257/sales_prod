@@ -5,6 +5,7 @@
  * Multi-Brand Shopify E-Commerce & B2B Wholesale Portal API
  * OpenAPI spec version: 0.1.0
  */
+import type { StoreUpdateButtonStyle } from './storeUpdateButtonStyle';
 import type { StoreUpdateFontFamily } from './storeUpdateFontFamily';
 
 export interface StoreUpdate {
@@ -15,6 +16,20 @@ export interface StoreUpdate {
   primaryColor?: string;
   accentColor?: string;
   fontFamily?: StoreUpdateFontFamily;
+  heroEyebrow?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  heroImageUrl?: string;
+  heroCtaLabel?: string;
+  shopNavigationLabel?: string;
+  featuredSectionTitle?: string;
+  featuredSectionDescription?: string;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  featuredProductLimit?: number;
+  buttonStyle?: StoreUpdateButtonStyle;
   isActive?: boolean;
   demoMode?: boolean;
   /**

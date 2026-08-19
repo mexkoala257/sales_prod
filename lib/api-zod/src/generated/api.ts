@@ -150,6 +150,10 @@ export const GetSuperAdminAnalyticsResponse = zod.object({
 /**
  * @summary List all storefronts
  */
+export const listStoresResponseFeaturedProductLimitMax = 12;
+
+
+
 export const ListStoresResponseItem = zod.object({
   "id": zod.number(),
   "name": zod.string(),
@@ -160,6 +164,16 @@ export const ListStoresResponseItem = zod.object({
   "primaryColor": zod.string().optional(),
   "accentColor": zod.string().optional(),
   "fontFamily": zod.enum(['Inter', 'Playfair Display', 'Outfit', 'Space Grotesk']).optional(),
+  "heroEyebrow": zod.string().nullish(),
+  "heroTitle": zod.string().nullish(),
+  "heroSubtitle": zod.string().nullish(),
+  "heroImageUrl": zod.string().nullish(),
+  "heroCtaLabel": zod.string().nullish(),
+  "shopNavigationLabel": zod.string().nullish(),
+  "featuredSectionTitle": zod.string().nullish(),
+  "featuredSectionDescription": zod.string().nullish(),
+  "featuredProductLimit": zod.number().min(1).max(listStoresResponseFeaturedProductLimitMax).optional(),
+  "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "isActive": zod.boolean(),
   "demoMode": zod.boolean(),
   "customDomain": zod.string().nullish().describe('Custom domain pointing at this storefront (e.g. apexathletics.com)'),
@@ -178,6 +192,10 @@ export const ListStoresResponse = zod.array(ListStoresResponseItem)
 /**
  * @summary Create a new storefront
  */
+export const createStoreBodyFeaturedProductLimitMax = 12;
+
+
+
 export const CreateStoreBody = zod.object({
   "name": zod.string(),
   "slug": zod.string(),
@@ -187,12 +205,26 @@ export const CreateStoreBody = zod.object({
   "primaryColor": zod.string().optional(),
   "accentColor": zod.string().optional(),
   "fontFamily": zod.enum(['Inter', 'Playfair Display', 'Outfit', 'Space Grotesk']).optional(),
+  "heroEyebrow": zod.string().optional(),
+  "heroTitle": zod.string().optional(),
+  "heroSubtitle": zod.string().optional(),
+  "heroImageUrl": zod.string().optional(),
+  "heroCtaLabel": zod.string().optional(),
+  "shopNavigationLabel": zod.string().optional(),
+  "featuredSectionTitle": zod.string().optional(),
+  "featuredSectionDescription": zod.string().optional(),
+  "featuredProductLimit": zod.number().min(1).max(createStoreBodyFeaturedProductLimitMax).optional(),
+  "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "demoMode": zod.boolean().optional(),
   "customDomain": zod.string().nullish().describe('Custom domain pointing at this storefront (apex form, e.g. apexathletics.com). Pass null to clear.'),
   "shopifyDomain": zod.string().optional(),
   "shopifyStorefrontToken": zod.string().optional(),
   "shopifyAdminKey": zod.string().optional()
 })
+
+export const createStoreResponseFeaturedProductLimitMax = 12;
+
+
 
 export const CreateStoreResponse = zod.object({
   "id": zod.number(),
@@ -204,6 +236,16 @@ export const CreateStoreResponse = zod.object({
   "primaryColor": zod.string().optional(),
   "accentColor": zod.string().optional(),
   "fontFamily": zod.enum(['Inter', 'Playfair Display', 'Outfit', 'Space Grotesk']).optional(),
+  "heroEyebrow": zod.string().nullish(),
+  "heroTitle": zod.string().nullish(),
+  "heroSubtitle": zod.string().nullish(),
+  "heroImageUrl": zod.string().nullish(),
+  "heroCtaLabel": zod.string().nullish(),
+  "shopNavigationLabel": zod.string().nullish(),
+  "featuredSectionTitle": zod.string().nullish(),
+  "featuredSectionDescription": zod.string().nullish(),
+  "featuredProductLimit": zod.number().min(1).max(createStoreResponseFeaturedProductLimitMax).optional(),
+  "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "isActive": zod.boolean(),
   "demoMode": zod.boolean(),
   "customDomain": zod.string().nullish().describe('Custom domain pointing at this storefront (e.g. apexathletics.com)'),
@@ -225,6 +267,10 @@ export const GetStoreParams = zod.object({
   "storeId": zod.coerce.string()
 })
 
+export const getStoreResponseFeaturedProductLimitMax = 12;
+
+
+
 export const GetStoreResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
@@ -235,6 +281,16 @@ export const GetStoreResponse = zod.object({
   "primaryColor": zod.string().optional(),
   "accentColor": zod.string().optional(),
   "fontFamily": zod.enum(['Inter', 'Playfair Display', 'Outfit', 'Space Grotesk']).optional(),
+  "heroEyebrow": zod.string().nullish(),
+  "heroTitle": zod.string().nullish(),
+  "heroSubtitle": zod.string().nullish(),
+  "heroImageUrl": zod.string().nullish(),
+  "heroCtaLabel": zod.string().nullish(),
+  "shopNavigationLabel": zod.string().nullish(),
+  "featuredSectionTitle": zod.string().nullish(),
+  "featuredSectionDescription": zod.string().nullish(),
+  "featuredProductLimit": zod.number().min(1).max(getStoreResponseFeaturedProductLimitMax).optional(),
+  "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "isActive": zod.boolean(),
   "demoMode": zod.boolean(),
   "customDomain": zod.string().nullish().describe('Custom domain pointing at this storefront (e.g. apexathletics.com)'),
@@ -256,6 +312,10 @@ export const UpdateStoreParams = zod.object({
   "storeId": zod.coerce.string()
 })
 
+export const updateStoreBodyFeaturedProductLimitMax = 12;
+
+
+
 export const UpdateStoreBody = zod.object({
   "name": zod.string().optional(),
   "logoText": zod.string().optional(),
@@ -264,6 +324,16 @@ export const UpdateStoreBody = zod.object({
   "primaryColor": zod.string().optional(),
   "accentColor": zod.string().optional(),
   "fontFamily": zod.enum(['Inter', 'Playfair Display', 'Outfit', 'Space Grotesk']).optional(),
+  "heroEyebrow": zod.string().optional(),
+  "heroTitle": zod.string().optional(),
+  "heroSubtitle": zod.string().optional(),
+  "heroImageUrl": zod.string().optional(),
+  "heroCtaLabel": zod.string().optional(),
+  "shopNavigationLabel": zod.string().optional(),
+  "featuredSectionTitle": zod.string().optional(),
+  "featuredSectionDescription": zod.string().optional(),
+  "featuredProductLimit": zod.number().min(1).max(updateStoreBodyFeaturedProductLimitMax).optional(),
+  "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "isActive": zod.boolean().optional(),
   "demoMode": zod.boolean().optional(),
   "customDomain": zod.string().nullish().describe('Custom domain pointing at this storefront (apex form, e.g. apexathletics.com). Pass null to clear.'),
@@ -271,6 +341,10 @@ export const UpdateStoreBody = zod.object({
   "shopifyStorefrontToken": zod.string().optional(),
   "shopifyAdminKey": zod.string().optional()
 })
+
+export const updateStoreResponseFeaturedProductLimitMax = 12;
+
+
 
 export const UpdateStoreResponse = zod.object({
   "id": zod.number(),
@@ -282,6 +356,16 @@ export const UpdateStoreResponse = zod.object({
   "primaryColor": zod.string().optional(),
   "accentColor": zod.string().optional(),
   "fontFamily": zod.enum(['Inter', 'Playfair Display', 'Outfit', 'Space Grotesk']).optional(),
+  "heroEyebrow": zod.string().nullish(),
+  "heroTitle": zod.string().nullish(),
+  "heroSubtitle": zod.string().nullish(),
+  "heroImageUrl": zod.string().nullish(),
+  "heroCtaLabel": zod.string().nullish(),
+  "shopNavigationLabel": zod.string().nullish(),
+  "featuredSectionTitle": zod.string().nullish(),
+  "featuredSectionDescription": zod.string().nullish(),
+  "featuredProductLimit": zod.number().min(1).max(updateStoreResponseFeaturedProductLimitMax).optional(),
+  "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "isActive": zod.boolean(),
   "demoMode": zod.boolean(),
   "customDomain": zod.string().nullish().describe('Custom domain pointing at this storefront (e.g. apexathletics.com)'),
@@ -1461,7 +1545,17 @@ export const ResolveStorefrontByDomainResponse = zod.object({
   "announcementBar": zod.string().nullish(),
   "primaryColor": zod.string(),
   "accentColor": zod.string(),
-  "fontFamily": zod.string()
+  "fontFamily": zod.string(),
+  "heroEyebrow": zod.string().nullish(),
+  "heroTitle": zod.string().nullish(),
+  "heroSubtitle": zod.string().nullish(),
+  "heroImageUrl": zod.string().nullish(),
+  "heroCtaLabel": zod.string().nullish(),
+  "shopNavigationLabel": zod.string().nullish(),
+  "featuredSectionTitle": zod.string().nullish(),
+  "featuredSectionDescription": zod.string().nullish(),
+  "featuredProductLimit": zod.number().optional(),
+  "buttonStyle": zod.enum(['square', 'rounded']).optional()
 })
 
 
@@ -1481,7 +1575,17 @@ export const GetStorefrontConfigResponse = zod.object({
   "announcementBar": zod.string().nullish(),
   "primaryColor": zod.string(),
   "accentColor": zod.string(),
-  "fontFamily": zod.string()
+  "fontFamily": zod.string(),
+  "heroEyebrow": zod.string().nullish(),
+  "heroTitle": zod.string().nullish(),
+  "heroSubtitle": zod.string().nullish(),
+  "heroImageUrl": zod.string().nullish(),
+  "heroCtaLabel": zod.string().nullish(),
+  "shopNavigationLabel": zod.string().nullish(),
+  "featuredSectionTitle": zod.string().nullish(),
+  "featuredSectionDescription": zod.string().nullish(),
+  "featuredProductLimit": zod.number().optional(),
+  "buttonStyle": zod.enum(['square', 'rounded']).optional()
 })
 
 

@@ -5,6 +5,7 @@
  * Multi-Brand Shopify E-Commerce & B2B Wholesale Portal API
  * OpenAPI spec version: 0.1.0
  */
+import type { StorefrontConfigButtonStyle } from './storefrontConfigButtonStyle';
 
 export interface StorefrontConfig {
   id: number;
@@ -19,4 +20,22 @@ export interface StorefrontConfig {
   primaryColor: string;
   accentColor: string;
   fontFamily: string;
+  /** @nullable */
+  heroEyebrow?: string | null;
+  /** @nullable */
+  heroTitle?: string | null;
+  /** @nullable */
+  heroSubtitle?: string | null;
+  /** @nullable */
+  heroImageUrl?: string | null;
+  /** @nullable */
+  heroCtaLabel?: string | null;
+  /** @nullable */
+  shopNavigationLabel?: string | null;
+  /** @nullable */
+  featuredSectionTitle?: string | null;
+  /** @nullable */
+  featuredSectionDescription?: string | null;
+  featuredProductLimit?: number;
+  buttonStyle?: StorefrontConfigButtonStyle;
 }

@@ -1,4 +1,4 @@
-import { pgTable, text, serial, boolean, timestamp, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp, integer } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
 
@@ -12,6 +12,16 @@ export const storesTable = pgTable("stores", {
   primaryColor: text("primary_color").notNull().default("#1a1a2e"),
   accentColor: text("accent_color").notNull().default("#e94560"),
   fontFamily: text("font_family").notNull().default("Inter"),
+  heroEyebrow: text("hero_eyebrow"),
+  heroTitle: text("hero_title"),
+  heroSubtitle: text("hero_subtitle"),
+  heroImageUrl: text("hero_image_url"),
+  heroCtaLabel: text("hero_cta_label"),
+  shopNavigationLabel: text("shop_navigation_label"),
+  featuredSectionTitle: text("featured_section_title"),
+  featuredSectionDescription: text("featured_section_description"),
+  featuredProductLimit: integer("featured_product_limit").notNull().default(4),
+  buttonStyle: text("button_style").notNull().default("square"),
   isActive: boolean("is_active").notNull().default(true),
   demoMode: boolean("demo_mode").notNull().default(true),
   customDomain: text("custom_domain").unique(),

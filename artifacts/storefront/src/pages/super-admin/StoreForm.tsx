@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useParams } from 'wouter';
-import { useCreateStore, useUpdateStore, useGetStore, StoreInputFontFamily, StoreUpdateFontFamily } from '@workspace/api-client-react';
-import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label } from '@/components/ui';
+import { useCreateStore, useUpdateStore, useGetStore, StoreInputFontFamily, StoreUpdateFontFamily, StoreInputButtonStyle, StoreUpdateButtonStyle } from '@workspace/api-client-react';
+import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label, Textarea } from '@/components/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQueryClient } from '@tanstack/react-query';
 import { getListStoresQueryKey } from '@workspace/api-client-react';
@@ -25,6 +25,16 @@ export default function SuperAdminStoreForm() {
     primaryColor: '#000000',
     accentColor: '#f3f4f6',
     fontFamily: StoreInputFontFamily.Inter as StoreInputFontFamily | StoreUpdateFontFamily,
+    heroEyebrow: '',
+    heroTitle: '',
+    heroSubtitle: '',
+    heroImageUrl: '',
+    heroCtaLabel: 'Shop the collection',
+    shopNavigationLabel: 'Shop',
+    featuredSectionTitle: 'Featured arrivals',
+    featuredSectionDescription: '',
+    featuredProductLimit: 4,
+    buttonStyle: StoreInputButtonStyle.square as StoreInputButtonStyle | StoreUpdateButtonStyle,
     demoMode: false,
     isActive: true,
   });
@@ -38,6 +48,16 @@ export default function SuperAdminStoreForm() {
         primaryColor: store.primaryColor || '#000000',
         accentColor: store.accentColor || '#f3f4f6',
         fontFamily: store.fontFamily as StoreInputFontFamily,
+        heroEyebrow: store.heroEyebrow || '',
+        heroTitle: store.heroTitle || '',
+        heroSubtitle: store.heroSubtitle || '',
+        heroImageUrl: store.heroImageUrl || '',
+        heroCtaLabel: store.heroCtaLabel || 'Shop the collection',
+        shopNavigationLabel: store.shopNavigationLabel || 'Shop',
+        featuredSectionTitle: store.featuredSectionTitle || 'Featured arrivals',
+        featuredSectionDescription: store.featuredSectionDescription || '',
+        featuredProductLimit: store.featuredProductLimit || 4,
+        buttonStyle: (store.buttonStyle || StoreInputButtonStyle.square) as StoreInputButtonStyle,
         demoMode: store.demoMode,
         isActive: store.isActive,
       });
@@ -141,6 +161,66 @@ export default function SuperAdminStoreForm() {
 
         <Card className="rounded-none shadow-sm">
           <CardHeader>
+            <CardTitle>Storefront Content</CardTitle>
+            <p className="text-sm text-muted-foreground">Shape the public home page without changing code. Leave a field blank to use the storefront default.</p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Shop Navigation Label</Label>
+                <Input value={formData.shopNavigationLabel} onChange={e => setFormData({ ...formData, shopNavigationLabel: e.target.value })} placeholder="Shop" className="rounded-none" maxLength={30} />
+              </div>
+              <div className="space-y-2">
+                <Label>Hero Eyebrow</Label>
+                <Input value={formData.heroEyebrow} onChange={e => setFormData({ ...formData, heroEyebrow: e.target.value })} placeholder="New season / Since 2026" className="rounded-none" maxLength={60} />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Hero Title</Label>
+              <Input value={formData.heroTitle} onChange={e => setFormData({ ...formData, heroTitle: e.target.value })} placeholder="Made to be lived in." className="rounded-none" maxLength={120} />
+            </div>
+            <div className="space-y-2">
+              <Label>Hero Description</Label>
+              <Textarea value={formData.heroSubtitle} onChange={e => setFormData({ ...formData, heroSubtitle: e.target.value })} placeholder="A short, compelling introduction to your collection." className="rounded-none min-h-24" maxLength={280} />
+            </div>
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Hero Call-to-Action</Label>
+                <Input value={formData.heroCtaLabel} onChange={e => setFormData({ ...formData, heroCtaLabel: e.target.value })} placeholder="Shop the collection" className="rounded-none" maxLength={40} />
+              </div>
+              <div className="space-y-2">
+                <Label>Hero Image URL</Label>
+                <Input value={formData.heroImageUrl} onChange={e => setFormData({ ...formData, heroImageUrl: e.target.value })} placeholder="https://..." className="rounded-none" type="url" />
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-none shadow-sm">
+          <CardHeader>
+            <CardTitle>Merchandising</CardTitle>
+            <p className="text-sm text-muted-foreground">Control the featured-product moment at the top of your storefront.</p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="grid gap-4 md:grid-cols-2">
+              <div className="space-y-2">
+                <Label>Featured Section Title</Label>
+                <Input value={formData.featuredSectionTitle} onChange={e => setFormData({ ...formData, featuredSectionTitle: e.target.value })} placeholder="Featured arrivals" className="rounded-none" maxLength={80} />
+              </div>
+              <div className="space-y-2">
+                <Label>Featured Product Count</Label>
+                <Input type="number" min={1} max={12} value={formData.featuredProductLimit} onChange={e => setFormData({ ...formData, featuredProductLimit: Math.min(12, Math.max(1, Number(e.target.value) || 1)) })} className="rounded-none" />
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label>Featured Section Description</Label>
+              <Textarea value={formData.featuredSectionDescription} onChange={e => setFormData({ ...formData, featuredSectionDescription: e.target.value })} placeholder="Optional supporting copy for the featured collection." className="rounded-none min-h-20" maxLength={220} />
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-none shadow-sm">
+          <CardHeader>
             <CardTitle>Brand Theming</CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
@@ -172,6 +252,18 @@ export default function SuperAdminStoreForm() {
                   <SelectItem value={StoreInputFontFamily.Playfair_Display}>Playfair Display (Luxury, Serif)</SelectItem>
                   <SelectItem value={StoreInputFontFamily.Outfit}>Outfit (Geometric, Tech)</SelectItem>
                   <SelectItem value={StoreInputFontFamily.Space_Grotesk}>Space Grotesk (Avant-garde)</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Button Treatment</Label>
+              <Select value={formData.buttonStyle} onValueChange={(val: StoreInputButtonStyle | StoreUpdateButtonStyle) => setFormData({ ...formData, buttonStyle: val })}>
+                <SelectTrigger className="rounded-none w-full md:w-[300px]">
+                  <SelectValue placeholder="Select a button treatment" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value={StoreInputButtonStyle.square}>Square & Editorial</SelectItem>
+                  <SelectItem value={StoreInputButtonStyle.rounded}>Softly Rounded</SelectItem>
                 </SelectContent>
               </Select>
             </div>

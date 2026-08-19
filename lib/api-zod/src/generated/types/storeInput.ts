@@ -5,6 +5,7 @@
  * Multi-Brand Shopify E-Commerce & B2B Wholesale Portal API
  * OpenAPI spec version: 0.1.0
  */
+import type { StoreInputButtonStyle } from './storeInputButtonStyle';
 import type { StoreInputFontFamily } from './storeInputFontFamily';
 
 export interface StoreInput {
@@ -16,6 +17,20 @@ export interface StoreInput {
   primaryColor?: string;
   accentColor?: string;
   fontFamily?: StoreInputFontFamily;
+  heroEyebrow?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  heroImageUrl?: string;
+  heroCtaLabel?: string;
+  shopNavigationLabel?: string;
+  featuredSectionTitle?: string;
+  featuredSectionDescription?: string;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  featuredProductLimit?: number;
+  buttonStyle?: StoreInputButtonStyle;
   demoMode?: boolean;
   /**
      * Custom domain pointing at this storefront (apex form, e.g. apexathletics.com). Pass null to clear.

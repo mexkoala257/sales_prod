@@ -59,6 +59,14 @@ export const StoreFontFamily = {
   Space_Grotesk: 'Space Grotesk',
 } as const;
 
+export type StoreButtonStyle = typeof StoreButtonStyle[keyof typeof StoreButtonStyle];
+
+
+export const StoreButtonStyle = {
+  square: 'square',
+  rounded: 'rounded',
+} as const;
+
 export interface Store {
   id: number;
   name: string;
@@ -72,6 +80,28 @@ export interface Store {
   primaryColor?: string;
   accentColor?: string;
   fontFamily?: StoreFontFamily;
+  /** @nullable */
+  heroEyebrow?: string | null;
+  /** @nullable */
+  heroTitle?: string | null;
+  /** @nullable */
+  heroSubtitle?: string | null;
+  /** @nullable */
+  heroImageUrl?: string | null;
+  /** @nullable */
+  heroCtaLabel?: string | null;
+  /** @nullable */
+  shopNavigationLabel?: string | null;
+  /** @nullable */
+  featuredSectionTitle?: string | null;
+  /** @nullable */
+  featuredSectionDescription?: string | null;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  featuredProductLimit?: number;
+  buttonStyle?: StoreButtonStyle;
   isActive: boolean;
   demoMode: boolean;
   /**
@@ -102,6 +132,14 @@ export const StoreInputFontFamily = {
   Space_Grotesk: 'Space Grotesk',
 } as const;
 
+export type StoreInputButtonStyle = typeof StoreInputButtonStyle[keyof typeof StoreInputButtonStyle];
+
+
+export const StoreInputButtonStyle = {
+  square: 'square',
+  rounded: 'rounded',
+} as const;
+
 export interface StoreInput {
   name: string;
   slug: string;
@@ -111,6 +149,20 @@ export interface StoreInput {
   primaryColor?: string;
   accentColor?: string;
   fontFamily?: StoreInputFontFamily;
+  heroEyebrow?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  heroImageUrl?: string;
+  heroCtaLabel?: string;
+  shopNavigationLabel?: string;
+  featuredSectionTitle?: string;
+  featuredSectionDescription?: string;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  featuredProductLimit?: number;
+  buttonStyle?: StoreInputButtonStyle;
   demoMode?: boolean;
   /**
      * Custom domain pointing at this storefront (apex form, e.g. apexathletics.com). Pass null to clear.
@@ -132,6 +184,14 @@ export const StoreUpdateFontFamily = {
   Space_Grotesk: 'Space Grotesk',
 } as const;
 
+export type StoreUpdateButtonStyle = typeof StoreUpdateButtonStyle[keyof typeof StoreUpdateButtonStyle];
+
+
+export const StoreUpdateButtonStyle = {
+  square: 'square',
+  rounded: 'rounded',
+} as const;
+
 export interface StoreUpdate {
   name?: string;
   logoText?: string;
@@ -140,6 +200,20 @@ export interface StoreUpdate {
   primaryColor?: string;
   accentColor?: string;
   fontFamily?: StoreUpdateFontFamily;
+  heroEyebrow?: string;
+  heroTitle?: string;
+  heroSubtitle?: string;
+  heroImageUrl?: string;
+  heroCtaLabel?: string;
+  shopNavigationLabel?: string;
+  featuredSectionTitle?: string;
+  featuredSectionDescription?: string;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  featuredProductLimit?: number;
+  buttonStyle?: StoreUpdateButtonStyle;
   isActive?: boolean;
   demoMode?: boolean;
   /**
@@ -151,6 +225,14 @@ export interface StoreUpdate {
   shopifyStorefrontToken?: string;
   shopifyAdminKey?: string;
 }
+
+export type StorefrontConfigButtonStyle = typeof StorefrontConfigButtonStyle[keyof typeof StorefrontConfigButtonStyle];
+
+
+export const StorefrontConfigButtonStyle = {
+  square: 'square',
+  rounded: 'rounded',
+} as const;
 
 export interface StorefrontConfig {
   id: number;
@@ -165,6 +247,24 @@ export interface StorefrontConfig {
   primaryColor: string;
   accentColor: string;
   fontFamily: string;
+  /** @nullable */
+  heroEyebrow?: string | null;
+  /** @nullable */
+  heroTitle?: string | null;
+  /** @nullable */
+  heroSubtitle?: string | null;
+  /** @nullable */
+  heroImageUrl?: string | null;
+  /** @nullable */
+  heroCtaLabel?: string | null;
+  /** @nullable */
+  shopNavigationLabel?: string | null;
+  /** @nullable */
+  featuredSectionTitle?: string | null;
+  /** @nullable */
+  featuredSectionDescription?: string | null;
+  featuredProductLimit?: number;
+  buttonStyle?: StorefrontConfigButtonStyle;
 }
 
 export interface AdminUser {

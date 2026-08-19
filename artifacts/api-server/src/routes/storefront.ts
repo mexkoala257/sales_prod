@@ -58,6 +58,16 @@ function storeConfigResponse(store: typeof storesTable.$inferSelect) {
     primaryColor: store.primaryColor,
     accentColor: store.accentColor,
     fontFamily: store.fontFamily,
+    heroEyebrow: store.heroEyebrow,
+    heroTitle: store.heroTitle,
+    heroSubtitle: store.heroSubtitle,
+    heroImageUrl: store.heroImageUrl,
+    heroCtaLabel: store.heroCtaLabel,
+    shopNavigationLabel: store.shopNavigationLabel,
+    featuredSectionTitle: store.featuredSectionTitle,
+    featuredSectionDescription: store.featuredSectionDescription,
+    featuredProductLimit: store.featuredProductLimit,
+    buttonStyle: store.buttonStyle,
   };
 }
 
