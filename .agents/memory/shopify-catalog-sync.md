@@ -16,3 +16,9 @@ Use Shopify Admin GraphQL for product creation, parent-product updates, and manu
 **Why:** Shopify has retired REST product writes for current OAuth applications; a successful OAuth connection with read scopes alone cannot create platform products in Shopify.
 
 **How to apply:** Surface an actionable reconnect message for authorization failures, and keep the user-visible sync copy limited to the fields the current implementation actually mirrors.
+
+Portal-uploaded product images must be finalized as public App Storage objects before they are sent to Shopify. Keep their Shopify media IDs with the local image records so a later product sync adds only new files.
+
+**Why:** Shopify fetches media from outside the authenticated portal and cannot read private object URLs. Without the remote media link, every subsequent sync would re-upload the same image.
+
+**How to apply:** Upload image bytes directly to App Storage, explicitly mark completed product images public, store their public portal URL in the product image record, and only send images that do not already have a Shopify media ID.

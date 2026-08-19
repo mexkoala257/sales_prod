@@ -495,6 +495,9 @@ interface ShopifyGraphqlProduct {
   variants: {
     nodes: Array<{ id: string; legacyResourceId: string }>;
   };
+  media: {
+    nodes: Array<{ id: string }>;
+  };
 }
 
 interface VariantOptionPlan {
@@ -546,6 +549,22 @@ function throwForUserErrors(errors: ShopifyGraphqlUserError[], action: string): 
   }
 }
 
+async function linkProductMedia(
+  productId: number,
+  images: PlatformImage[],
+  remoteMedia: Array<{ id: string }>,
+): Promise<void> {
+  const pendingImages = images.filter((image) => !image.shopifyMediaId);
+  const mappedMedia = remoteMedia.slice(-pendingImages.length);
+  for (let index = 0; index < pendingImages.length; index += 1) {
+    const media = mappedMedia[index];
+    if (!media) continue;
+    await db.update(productImagesTable)
+      .set({ shopifyMediaId: media.id })
+      .where(eq(productImagesTable.id, pendingImages[index].id));
+  }
+}
+
 async function createProductWithGraphql(
   config: ShopifyConfig,
   product: PlatformProduct,
@@ -564,6 +583,9 @@ async function createProductWithGraphql(
           legacyResourceId
           variants(first: 1) {
             nodes { id legacyResourceId }
+          }
+          media(first: 250) {
+            nodes { id }
           }
         }
         userErrors { field message }
@@ -609,6 +631,39 @@ async function updateProductWithGraphql(
     },
   );
   throwForUserErrors(data.productUpdate.userErrors, "update this product");
+}
+
+async function syncProductMedia(
+  config: ShopifyConfig,
+  product: PlatformProduct,
+  images: PlatformImage[],
+): Promise<void> {
+  const pendingImages = images.filter((image) => !image.shopifyMediaId);
+  if (pendingImages.length === 0) return;
+  const data = await adminGraphql<{
+    productUpdate: {
+      product: { media: { nodes: Array<{ id: string }> } } | null;
+      userErrors: ShopifyGraphqlUserError[];
+    };
+  }>(
+    config,
+    `mutation ProductAddMedia($product: ProductUpdateInput!, $media: [CreateMediaInput!]) {
+      productUpdate(product: $product, media: $media) {
+        product { media(first: 250) { nodes { id } } }
+        userErrors { field message }
+      }
+    }`,
+    {
+      product: { id: toShopifyGid("Product", product.shopifyProductId!) },
+      media: pendingImages.map((image) => ({
+        originalSource: image.url,
+        mediaContentType: "IMAGE",
+        ...(image.altText ? { alt: image.altText } : {}),
+      })),
+    },
+  );
+  throwForUserErrors(data.productUpdate.userErrors, "add product images");
+  await linkProductMedia(product.id, pendingImages, data.productUpdate.product?.media.nodes ?? []);
 }
 
 async function mappedCustomCollectionIds(config: ShopifyConfig, storeId: number): Promise<string[]> {
@@ -811,6 +866,7 @@ async function pushProductToShopifyUnlocked(storeId: number, productId: number):
 
   if (product.shopifyProductId) {
     await updateProductWithGraphql(config, productForPush);
+    await syncProductMedia(config, productForPush, images);
     await syncVariantsWithGraphql(config, productForPush, variants);
     await db
       .update(productsTable)
@@ -848,6 +904,7 @@ async function pushProductToShopifyUnlocked(storeId: number, productId: number):
       status: productForPush.status,
     })
     .where(eq(productsTable.id, product.id));
+  await linkProductMedia(product.id, images, created.media.nodes);
   const defaultVariant = created.variants.nodes[0];
   if (variants[0] && defaultVariant) {
     await db
@@ -973,6 +1030,7 @@ async function upsertProduct(storeId: number, sp: ShopifyProduct): Promise<"crea
         url: img.src,
         altText: img.alt,
         displayOrder: img.position,
+        shopifyMediaId: `gid://shopify/MediaImage/${img.id}`,
       }))
     );
   }

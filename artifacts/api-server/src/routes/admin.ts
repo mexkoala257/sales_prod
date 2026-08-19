@@ -129,7 +129,7 @@ router.post("/admin/products", requireStoreAdmin, async (req, res): Promise<void
     await db.insert(productVariantsTable).values(variants.map(({ id: _id, ...v }: any) => ({ ...v, productId: product.id })));
   }
   if (images.length > 0) {
-    await db.insert(productImagesTable).values(images.map(({ id: _id, ...img }: any) => ({ ...img, productId: product.id })));
+    await db.insert(productImagesTable).values(images.map(({ id: _id, shopifyMediaId: _shopifyMediaId, ...img }: any) => ({ ...img, productId: product.id })));
   }
   if (categoryIds.length > 0) {
     await db.insert(productCategoriesTable).values(categoryIds.map((cId: number) => ({ productId: product.id, categoryId: cId })));
@@ -186,9 +186,17 @@ router.patch("/admin/products/:productId", requireStoreAdmin, async (req, res): 
     }
   }
   if (images !== undefined) {
+    const existingImages = await db.select().from(productImagesTable).where(eq(productImagesTable.productId, id));
+    const existingImageById = new Map(existingImages.map((image) => [image.id, image]));
     await db.delete(productImagesTable).where(eq(productImagesTable.productId, id));
     if (images.length > 0) {
-      await db.insert(productImagesTable).values(images.map(({ id: _id, ...img }: any) => ({ ...img, productId: id })));
+      await db.insert(productImagesTable).values(images.map(({ id: imageId, shopifyMediaId: _shopifyMediaId, ...img }: any) => ({
+        ...img,
+        productId: id,
+        ...(imageId && existingImageById.get(imageId)?.shopifyMediaId
+          ? { shopifyMediaId: existingImageById.get(imageId)!.shopifyMediaId }
+          : {}),
+      })));
     }
   }
   if (categoryIds !== undefined) {
@@ -219,7 +227,7 @@ router.post("/admin/products/:productId/sync-shopify", requireStoreAdmin, async 
       success: true,
       message: result.created
         ? "Product, its variants, and its current images were created in Shopify and linked to this storefront."
-        : "Product details and variants were sent to Shopify. Retired variants were removed; existing Shopify images and checkout inventory are unchanged.",
+        : "Product details and variants were sent to Shopify. New product images were added; retired variants were removed.",
       synced: 1,
       errors: 0,
     });

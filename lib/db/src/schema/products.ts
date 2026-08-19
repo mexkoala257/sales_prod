@@ -47,6 +47,7 @@ export const productImagesTable = pgTable("product_images", {
   url: text("url").notNull(),
   altText: text("alt_text"),
   displayOrder: integer("display_order").notNull().default(0),
+  shopifyMediaId: text("shopify_media_id"),
 });
 
 export const productCategoriesTable = pgTable("product_categories", {
