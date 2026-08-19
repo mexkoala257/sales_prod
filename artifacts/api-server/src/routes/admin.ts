@@ -13,7 +13,7 @@ import {
   orderItemsTable,
   storesTable,
 } from "@workspace/db";
-import { eq, and, sql } from "drizzle-orm";
+import { eq, and, inArray, sql } from "drizzle-orm";
 import { requireStoreAdmin } from "../middlewares/auth";
 import type { JwtPayload } from "../middlewares/auth";
 import {
@@ -310,22 +310,42 @@ router.delete("/admin/b2b-accounts/:clientId", requireStoreAdmin, async (req, re
 });
 
 router.get("/admin/b2b-accounts/:clientId/products", requireStoreAdmin, async (req, res): Promise<void> => {
+  const storeId = getStoreId(req);
   const id = parseInt(req.params.clientId as string, 10);
+  const [client] = await db.select({ id: b2bClientsTable.id }).from(b2bClientsTable)
+    .where(and(eq(b2bClientsTable.id, id), eq(b2bClientsTable.storeId, storeId)));
+  if (!client) { res.status(404).json({ error: "B2B client not found" }); return; }
   const rows = await db.select({ productId: b2bClientProductsTable.productId }).from(b2bClientProductsTable).where(eq(b2bClientProductsTable.b2bClientId, id));
   res.json({ productIds: rows.map((r) => r.productId) });
 });
 
 router.put("/admin/b2b-accounts/:clientId/products", requireStoreAdmin, async (req, res): Promise<void> => {
+  const storeId = getStoreId(req);
   const id = parseInt(req.params.clientId as string, 10);
   const parsed = SetB2BClientProductsBody.safeParse(req.body);
   if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
 
-  await db.delete(b2bClientProductsTable).where(eq(b2bClientProductsTable.b2bClientId, id));
-  if (parsed.data.productIds.length > 0) {
-    await db.insert(b2bClientProductsTable).values(parsed.data.productIds.map((pid: number) => ({ b2bClientId: id, productId: pid })));
+  const [client] = await db.select({ id: b2bClientsTable.id }).from(b2bClientsTable)
+    .where(and(eq(b2bClientsTable.id, id), eq(b2bClientsTable.storeId, storeId)));
+  if (!client) { res.status(404).json({ error: "B2B client not found" }); return; }
+
+  const requestedProductIds = [...new Set(parsed.data.productIds)];
+  if (requestedProductIds.length > 0) {
+    const storeProducts = await db.select({ id: productsTable.id }).from(productsTable).where(
+      and(eq(productsTable.storeId, storeId), inArray(productsTable.id, requestedProductIds))
+    );
+    if (storeProducts.length !== requestedProductIds.length) {
+      res.status(400).json({ error: "Every assigned product must belong to this storefront." });
+      return;
+    }
   }
 
-  res.json({ productIds: parsed.data.productIds });
+  await db.delete(b2bClientProductsTable).where(eq(b2bClientProductsTable.b2bClientId, id));
+  if (requestedProductIds.length > 0) {
+    await db.insert(b2bClientProductsTable).values(requestedProductIds.map((pid) => ({ b2bClientId: id, productId: pid })));
+  }
+
+  res.json({ productIds: requestedProductIds });
 });
 
 // ── Orders ────────────────────────────────────────────────────────

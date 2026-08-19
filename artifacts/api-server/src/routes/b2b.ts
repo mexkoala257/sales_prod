@@ -11,7 +11,7 @@ import {
   orderItemsTable,
   storesTable,
 } from "@workspace/db";
-import { eq, and, inArray } from "drizzle-orm";
+import { eq, and, inArray, or } from "drizzle-orm";
 import { requireB2BClient } from "../middlewares/auth";
 import type { JwtPayload } from "../middlewares/auth";
 import { CreateB2BOrderBody } from "@workspace/api-zod";
@@ -93,7 +93,12 @@ router.get("/b2b/catalog", requireB2BClient, async (req, res): Promise<void> => 
   let products: any[] = [];
   if (productIds.length > 0) {
     products = await db.select().from(productsTable).where(
-      and(eq(productsTable.storeId, storeId), inArray(productsTable.id, productIds), eq(productsTable.status, "active"))
+      and(
+        eq(productsTable.storeId, storeId),
+        inArray(productsTable.id, productIds),
+        eq(productsTable.status, "active"),
+        or(eq(productsTable.channel, "all"), eq(productsTable.channel, "b2b"))
+      )
     );
   }
 
@@ -112,7 +117,12 @@ router.get("/b2b/matrix", requireB2BClient, async (req, res): Promise<void> => {
   let products: any[] = [];
   if (productIds.length > 0) {
     products = await db.select().from(productsTable).where(
-      and(eq(productsTable.storeId, storeId), inArray(productsTable.id, productIds), eq(productsTable.status, "active"))
+      and(
+        eq(productsTable.storeId, storeId),
+        inArray(productsTable.id, productIds),
+        eq(productsTable.status, "active"),
+        or(eq(productsTable.channel, "all"), eq(productsTable.channel, "b2b"))
+      )
     );
   }
 
