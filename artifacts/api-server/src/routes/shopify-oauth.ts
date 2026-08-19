@@ -142,7 +142,8 @@ router.get("/shopify/oauth/callback", async (req: Request, res: Response): Promi
     // Auto-create (or reuse) a Storefront API access token
     let storefrontToken = "";
     try {
-      const sfCreateRes = await fetch(`https://${shop}/admin/api/2024-01/storefront_access_tokens.json`, {
+      const SF_API = `https://${shop}/admin/api/2024-10/storefront_access_tokens.json`;
+      const sfCreateRes = await fetch(SF_API, {
         method: "POST",
         headers: { "X-Shopify-Access-Token": adminToken, "Content-Type": "application/json" },
         body: JSON.stringify({ storefront_access_token: { title: "Platform Storefront Token" } }),
@@ -150,9 +151,13 @@ router.get("/shopify/oauth/callback", async (req: Request, res: Response): Promi
       if (sfCreateRes.ok) {
         const sfData = (await sfCreateRes.json()) as { storefront_access_token: { access_token: string } };
         storefrontToken = sfData.storefront_access_token.access_token;
+        logger.info({ shop }, "Shopify OAuth: Storefront API token created");
       } else {
-        // Likely already exists — fetch the list and reuse the matching one
-        const sfListRes = await fetch(`https://${shop}/admin/api/2024-01/storefront_access_tokens.json`, {
+        const createBody = await sfCreateRes.text();
+        logger.warn({ shop, status: sfCreateRes.status, body: createBody },
+          "Shopify OAuth: Storefront token POST failed — trying to fetch existing token");
+        // Token may already exist; fetch the list and reuse the matching one
+        const sfListRes = await fetch(SF_API, {
           headers: { "X-Shopify-Access-Token": adminToken },
         });
         if (sfListRes.ok) {
@@ -160,11 +165,21 @@ router.get("/shopify/oauth/callback", async (req: Request, res: Response): Promi
             storefront_access_tokens: Array<{ title: string; access_token: string }>;
           };
           const existing = listData.storefront_access_tokens.find((t) => t.title === "Platform Storefront Token");
-          if (existing) storefrontToken = existing.access_token;
+          if (existing) {
+            storefrontToken = existing.access_token;
+            logger.info({ shop }, "Shopify OAuth: reusing existing Storefront API token");
+          } else {
+            logger.warn({ shop, available: listData.storefront_access_tokens.map((t) => t.title) },
+              "Shopify OAuth: no matching Storefront token found — user must paste it manually in Settings");
+          }
+        } else {
+          const listBody = await sfListRes.text();
+          logger.warn({ shop, status: sfListRes.status, body: listBody },
+            "Shopify OAuth: Storefront token list also failed");
         }
       }
     } catch (sfErr) {
-      logger.warn({ sfErr }, "Shopify OAuth: could not auto-create Storefront API token; can be set manually in Settings");
+      logger.warn({ sfErr }, "Shopify OAuth: unexpected error during Storefront token creation");
     }
 
     // Persist tokens; invalidate one-time nonce
