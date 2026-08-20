@@ -85,6 +85,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           <SidebarItem href="/admin/categories" icon={Settings} label="Categories" />
           <SidebarItem href="/admin/orders" icon={ShoppingBag} label="Orders" />
           <SidebarItem href="/admin/b2b-accounts" icon={Users} label="B2B Clients" />
+          <SidebarItem href="/admin/discovery-tiles" icon={Palette} label="Storefront Discovery" />
         </nav>
       </div>
       <div className="flex-1 flex flex-col min-w-0">

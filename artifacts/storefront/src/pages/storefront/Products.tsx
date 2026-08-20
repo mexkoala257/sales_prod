@@ -1,6 +1,6 @@
 import { StorefrontLayout } from './Home';
 import { useListStorefrontCategories, useListStorefrontProducts } from '@workspace/api-client-react';
-import { useParams, Link } from 'wouter';
+import { useParams, Link, useSearch } from 'wouter';
 import { Search, SlidersHorizontal, X } from 'lucide-react';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useStorefront } from '@/context/StorefrontContext';
@@ -15,14 +15,15 @@ export default function StorefrontProducts() {
   const { slug: contextSlug, isCustomDomain, storePath: ctxStorePath } = useStorefront();
   const storeSlug = isCustomDomain ? (contextSlug ?? '') : (paramSlug ?? '');
   const sp = (p: string) => ctxStorePath(p, storeSlug);
-  const initialParams = new URLSearchParams(window.location.search);
+  const searchParams = useSearch();
+  const params = new URLSearchParams(searchParams);
   const [search, setSearch] = useState('');
   const [categoryId, setCategoryId] = useState<number | null>(() => {
-    const value = Number(initialParams.get('category'));
+    const value = Number(params.get('category'));
     return Number.isInteger(value) && value > 0 ? value : null;
   });
   const [sort, setSort] = useState<'featured' | 'price-asc' | 'price-desc' | 'name'>(() => {
-    const value = initialParams.get('sort');
+    const value = params.get('sort');
     return value === 'price-asc' || value === 'price-desc' || value === 'name' ? value : 'featured';
   });
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -32,8 +33,12 @@ export default function StorefrontProducts() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const { data: categories } = useListStorefrontCategories(storeSlug, { query: { enabled: !!storeSlug } as any });
   useEffect(() => {
-    if (initialParams.get('focus') === 'search') searchInput.current?.focus();
-  }, []);
+    const value = Number(params.get('category'));
+    setCategoryId(Number.isInteger(value) && value > 0 ? value : null);
+    const sortValue = params.get('sort');
+    setSort(sortValue === 'price-asc' || sortValue === 'price-desc' || sortValue === 'name' ? sortValue : 'featured');
+    if (params.get('focus') === 'search') searchInput.current?.focus();
+  }, [searchParams]);
   const filteredProducts = useMemo(() => (products || []).filter((product) => {
     const matchesSearch = product.name.toLowerCase().includes(search.trim().toLowerCase());
     const matchesCategory = categoryId === null || product.categories?.includes(categoryId);

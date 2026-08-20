@@ -1,11 +1,12 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useParams } from 'wouter';
-import { useCreateStore, useUpdateStore, useGetStore, StoreInputFontFamily, StoreUpdateFontFamily, StoreInputButtonStyle, StoreUpdateButtonStyle } from '@workspace/api-client-react';
+import { useCreateStore, useUpdateStore, useGetStore, useListStorefrontCategories, StoreInputFontFamily, StoreUpdateFontFamily, StoreInputButtonStyle, StoreUpdateButtonStyle, type StorefrontDiscoveryTile } from '@workspace/api-client-react';
 import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label, Textarea } from '@/components/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQueryClient } from '@tanstack/react-query';
 import { getListStoresQueryKey } from '@workspace/api-client-react';
 import { Globe } from 'lucide-react';
+import { DiscoveryTileEditor } from '@/components/DiscoveryTileEditor';
 
 export default function SuperAdminStoreForm() {
   const { id } = useParams();
@@ -17,6 +18,7 @@ export default function SuperAdminStoreForm() {
   const { data: store, isLoading } = useGetStore(id || '', { query: { enabled: isEditing } as any });
   const createStore = useCreateStore();
   const updateStore = useUpdateStore();
+  const [saveError, setSaveError] = useState('');
 
   const [formData, setFormData] = useState({
     name: '',
@@ -34,6 +36,7 @@ export default function SuperAdminStoreForm() {
     featuredSectionTitle: 'Featured arrivals',
     featuredSectionDescription: '',
     featuredProductLimit: 4,
+    discoveryTiles: [] as StorefrontDiscoveryTile[],
     buttonStyle: StoreInputButtonStyle.square as StoreInputButtonStyle | StoreUpdateButtonStyle,
     demoMode: false,
     isActive: true,
@@ -57,6 +60,7 @@ export default function SuperAdminStoreForm() {
         featuredSectionTitle: store.featuredSectionTitle || 'Featured arrivals',
         featuredSectionDescription: store.featuredSectionDescription || '',
         featuredProductLimit: store.featuredProductLimit || 4,
+        discoveryTiles: store.discoveryTiles || [],
         buttonStyle: (store.buttonStyle || StoreInputButtonStyle.square) as StoreInputButtonStyle,
         demoMode: store.demoMode,
         isActive: store.isActive,
@@ -64,8 +68,12 @@ export default function SuperAdminStoreForm() {
     }
   }, [store, isEditing]);
 
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const { data: categories, isLoading: categoriesLoading } = useListStorefrontCategories(formData.slug, { query: { enabled: isEditing && !!formData.slug } as any });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    setSaveError('');
 
     // Normalise: strip https://, trailing slashes, lowercase, strip www. prefix
     // so the DB always stores the bare apex domain (e.g. "apexathletics.com")
@@ -77,25 +85,33 @@ export default function SuperAdminStoreForm() {
 
     // Send null when the domain is cleared so the unique constraint isn't violated
     const domain: string | null = rawDomain || null;
+    const data = {
+      ...formData,
+      customDomain: domain,
+      fontFamily: formData.fontFamily || (store?.fontFamily as StoreInputFontFamily) || StoreInputFontFamily.Inter,
+      buttonStyle: formData.buttonStyle || (store?.buttonStyle as StoreInputButtonStyle) || StoreInputButtonStyle.square,
+    };
 
     if (isEditing) {
       updateStore.mutate(
-        { storeId: id, data: { ...formData, customDomain: domain } },
+        { storeId: id, data },
         {
           onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: getListStoresQueryKey() });
             setLocation('/super-admin/stores');
           },
+          onError: () => setSaveError('We could not save this store. Check each field and try again.'),
         },
       );
     } else {
       createStore.mutate(
-        { data: { ...formData, customDomain: domain } },
+        { data },
         {
           onSuccess: () => {
             queryClient.invalidateQueries({ queryKey: getListStoresQueryKey() });
             setLocation('/super-admin/stores');
           },
+          onError: () => setSaveError('We could not save this store. Check each field and try again.'),
         },
       );
     }
@@ -219,6 +235,20 @@ export default function SuperAdminStoreForm() {
           </CardContent>
         </Card>
 
+        {!isEditing ? (
+          <Card className="rounded-none shadow-sm">
+            <CardHeader><CardTitle>Discovery Tiles</CardTitle></CardHeader>
+            <CardContent><p className="rounded-none border border-dashed p-4 text-sm text-muted-foreground">Create this store first, then add categories and choose the discovery tiles for its home page.</p></CardContent>
+          </Card>
+        ) : (
+          <DiscoveryTileEditor
+            tiles={formData.discoveryTiles}
+            categories={categories}
+            categoriesLoading={categoriesLoading}
+            onChange={(discoveryTiles) => setFormData((current) => ({ ...current, discoveryTiles }))}
+          />
+        )}
+
         <Card className="rounded-none shadow-sm">
           <CardHeader>
             <CardTitle>Brand Theming</CardTitle>
@@ -271,6 +301,7 @@ export default function SuperAdminStoreForm() {
         </Card>
 
         <div className="flex justify-end gap-4">
+          {saveError && <p role="alert" className="mr-auto self-center text-sm text-destructive">{saveError}</p>}
           <Button type="button" variant="outline" onClick={() => setLocation('/super-admin/stores')} className="rounded-none">Cancel</Button>
           <Button type="submit" disabled={createStore.isPending || updateStore.isPending} className="rounded-none min-w-[120px]">
             {(createStore.isPending || updateStore.isPending) ? 'Saving...' : (isEditing ? 'Commit Changes' : 'Deploy Store')}

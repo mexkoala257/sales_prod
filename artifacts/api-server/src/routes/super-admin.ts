@@ -20,6 +20,7 @@ import {
 import { getAllSettings, upsertSettings, getSetting } from "../lib/settings";
 import nodemailer from "nodemailer";
 import type { JwtPayload } from "../middlewares/auth";
+import { validateDiscoveryTiles } from "../lib/discovery-tiles";
 
 const router: IRouter = Router();
 
@@ -98,9 +99,12 @@ router.get("/super-admin/stores", requireSuperAdmin, async (_req, res): Promise<
 router.post("/super-admin/stores", requireSuperAdmin, async (req, res): Promise<void> => {
   const parsed = CreateStoreBody.safeParse(req.body);
   if (!parsed.success) {
+    req.log.warn({ validationIssues: parsed.error.issues }, "Invalid store create payload");
     res.status(400).json({ error: parsed.error.message });
     return;
   }
+  const discoveryTilesError = await validateDiscoveryTiles(parsed.data.discoveryTiles);
+  if (discoveryTilesError) { res.status(400).json({ error: discoveryTilesError }); return; }
   const [store] = await db.insert(storesTable).values(parsed.data).returning();
   res.status(201).json({ ...store, adminCount: 0, productCount: 0, orderCount: 0, totalRevenue: 0 });
 });
@@ -126,7 +130,13 @@ router.get("/super-admin/stores/:storeId", requireSuperAdmin, async (req, res): 
 router.patch("/super-admin/stores/:storeId", requireSuperAdmin, async (req, res): Promise<void> => {
   const id = parseInt(req.params.storeId as string, 10);
   const parsed = UpdateStoreBody.safeParse(req.body);
-  if (!parsed.success) { res.status(400).json({ error: parsed.error.message }); return; }
+  if (!parsed.success) {
+    req.log.warn({ validationIssues: parsed.error.issues }, "Invalid store update payload");
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+  const discoveryTilesError = await validateDiscoveryTiles(parsed.data.discoveryTiles, id);
+  if (discoveryTilesError) { res.status(400).json({ error: discoveryTilesError }); return; }
 
   const [store] = await db.update(storesTable).set(parsed.data).where(eq(storesTable.id, id)).returning();
   if (!store) { res.status(404).json({ error: "Store not found" }); return; }

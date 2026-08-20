@@ -729,6 +729,36 @@ paths:
         "204":
           description: Deleted
 
+  /admin/discovery-tiles:
+    get:
+      operationId: getAdminDiscoveryTiles
+      tags: [admin]
+      summary: Get discovery tiles for the authenticated store
+      responses:
+        "200":
+          description: Discovery-tile configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoveryTilesConfig"
+    patch:
+      operationId: updateAdminDiscoveryTiles
+      tags: [admin]
+      summary: Update discovery tiles for the authenticated store
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/DiscoveryTilesUpdate"
+      responses:
+        "200":
+          description: Updated discovery-tile configuration
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/DiscoveryTilesConfig"
+
   /admin/b2b-accounts:
     get:
       operationId: listB2BClients
@@ -1235,6 +1265,74 @@ components:
           type: ["boolean", "null"]
 
     # ── Store ────────────────────────────────────────────────
+    StorefrontCategoryDiscoveryTile:
+      type: object
+      additionalProperties: false
+      required: [id, type, categoryId, label, visible]
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 80
+        type:
+          type: string
+          enum: [category]
+        categoryId:
+          type: number
+          minimum: 1
+          multipleOf: 1
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+        visible:
+          type: boolean
+    StorefrontSortDiscoveryTile:
+      type: object
+      additionalProperties: false
+      required: [id, type, sort, label, visible]
+      properties:
+        id:
+          type: string
+          minLength: 1
+          maxLength: 80
+        type:
+          type: string
+          enum: [sort]
+        sort:
+          type: string
+          enum: [featured, price-asc, price-desc, name]
+        label:
+          type: string
+          minLength: 1
+          maxLength: 80
+        visible:
+          type: boolean
+    StorefrontDiscoveryTile:
+      oneOf:
+        - $ref: "#/components/schemas/StorefrontCategoryDiscoveryTile"
+        - $ref: "#/components/schemas/StorefrontSortDiscoveryTile"
+      discriminator:
+        propertyName: type
+    DiscoveryTilesConfig:
+      type: object
+      required: [discoveryTiles]
+      properties:
+        discoveryTiles:
+          type: array
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/StorefrontDiscoveryTile"
+    DiscoveryTilesUpdate:
+      type: object
+      required: [discoveryTiles]
+      properties:
+        discoveryTiles:
+          type: array
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/StorefrontDiscoveryTile"
+
     Store:
       type: object
       required: [id, name, slug, isActive, demoMode, createdAt]
@@ -1278,6 +1376,11 @@ components:
           type: number
           minimum: 1
           maximum: 12
+        discoveryTiles:
+          type: ["array", "null"]
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/StorefrontDiscoveryTile"
         buttonStyle:
           type: string
           enum: [square, rounded]
@@ -1346,6 +1449,11 @@ components:
           type: number
           minimum: 1
           maximum: 12
+        discoveryTiles:
+          type: array
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/StorefrontDiscoveryTile"
         buttonStyle:
           type: string
           enum: [square, rounded]
@@ -1399,6 +1507,11 @@ components:
           type: number
           minimum: 1
           maximum: 12
+        discoveryTiles:
+          type: array
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/StorefrontDiscoveryTile"
         buttonStyle:
           type: string
           enum: [square, rounded]
@@ -1456,6 +1569,11 @@ components:
           type: ["string", "null"]
         featuredProductLimit:
           type: number
+        discoveryTiles:
+          type: ["array", "null"]
+          maxItems: 12
+          items:
+            $ref: "#/components/schemas/StorefrontDiscoveryTile"
         buttonStyle:
           type: string
           enum: [square, rounded]

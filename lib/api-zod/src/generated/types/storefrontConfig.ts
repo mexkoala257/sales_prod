@@ -6,6 +6,7 @@
  * OpenAPI spec version: 0.1.0
  */
 import type { StorefrontConfigButtonStyle } from './storefrontConfigButtonStyle';
+import type { StorefrontDiscoveryTile } from './storefrontDiscoveryTile';
 
 export interface StorefrontConfig {
   id: number;
@@ -37,5 +38,10 @@ export interface StorefrontConfig {
   /** @nullable */
   featuredSectionDescription?: string | null;
   featuredProductLimit?: number;
+  /**
+     * @maxItems 12
+     * @nullable
+     */
+  discoveryTiles?: StorefrontDiscoveryTile[] | null;
   buttonStyle?: StorefrontConfigButtonStyle;
 }

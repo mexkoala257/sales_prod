@@ -34,6 +34,8 @@ import type {
   CategoryUpdate,
   ClientProductAccess,
   DisconnectShopifyOAuth200,
+  DiscoveryTilesConfig,
+  DiscoveryTilesUpdate,
   HealthStatus,
   LoginInput,
   Order,
@@ -3035,6 +3037,154 @@ export const useDeleteCategory = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getDeleteCategoryMutationOptions(options));
+    }
+
+export const getGetAdminDiscoveryTilesUrl = () => {
+
+
+
+
+  return `/api/admin/discovery-tiles`
+}
+
+/**
+ * @summary Get discovery tiles for the authenticated store
+ */
+export const getAdminDiscoveryTiles = async ( options?: Parameters<typeof customFetch>[1]): Promise<DiscoveryTilesConfig> => {
+
+  return customFetch<DiscoveryTilesConfig>(getGetAdminDiscoveryTilesUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminDiscoveryTilesQueryKey = () => {
+    return [
+    `/api/admin/discovery-tiles`
+    ] as const;
+    }
+
+
+export const getGetAdminDiscoveryTilesQueryOptions = <TData = Awaited<ReturnType<typeof getAdminDiscoveryTiles>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminDiscoveryTiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminDiscoveryTilesQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminDiscoveryTiles>>> = ({ signal }) => getAdminDiscoveryTiles({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminDiscoveryTiles>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminDiscoveryTilesQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminDiscoveryTiles>>>
+export type GetAdminDiscoveryTilesQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get discovery tiles for the authenticated store
+ */
+
+export function useGetAdminDiscoveryTiles<TData = Awaited<ReturnType<typeof getAdminDiscoveryTiles>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminDiscoveryTiles>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminDiscoveryTilesQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateAdminDiscoveryTilesUrl = () => {
+
+
+
+
+  return `/api/admin/discovery-tiles`
+}
+
+/**
+ * @summary Update discovery tiles for the authenticated store
+ */
+export const updateAdminDiscoveryTiles = async (discoveryTilesUpdate: DiscoveryTilesUpdate, options?: Parameters<typeof customFetch>[1]): Promise<DiscoveryTilesConfig> => {
+
+  return customFetch<DiscoveryTilesConfig>(getUpdateAdminDiscoveryTilesUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(discoveryTilesUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateAdminDiscoveryTilesMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminDiscoveryTiles>>, TError,{data: BodyType<DiscoveryTilesUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminDiscoveryTiles>>, TError,{data: BodyType<DiscoveryTilesUpdate>}, TContext> => {
+
+const mutationKey = ['updateAdminDiscoveryTiles'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminDiscoveryTiles>>, {data: BodyType<DiscoveryTilesUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateAdminDiscoveryTiles(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminDiscoveryTilesMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminDiscoveryTiles>>>
+    export type UpdateAdminDiscoveryTilesMutationBody = BodyType<DiscoveryTilesUpdate>
+    export type UpdateAdminDiscoveryTilesMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update discovery tiles for the authenticated store
+ */
+export const useUpdateAdminDiscoveryTiles = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminDiscoveryTiles>>, TError,{data: BodyType<DiscoveryTilesUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminDiscoveryTiles>>,
+        TError,
+        {data: BodyType<DiscoveryTilesUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminDiscoveryTilesMutationOptions(options));
     }
 
 export const getListB2BClientsUrl = () => {

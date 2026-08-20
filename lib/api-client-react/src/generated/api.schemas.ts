@@ -49,6 +49,75 @@ export interface AuthToken {
   user: AuthUser;
 }
 
+export type StorefrontCategoryDiscoveryTileType = typeof StorefrontCategoryDiscoveryTileType[keyof typeof StorefrontCategoryDiscoveryTileType];
+
+
+export const StorefrontCategoryDiscoveryTileType = {
+  category: 'category',
+} as const;
+
+export interface StorefrontCategoryDiscoveryTile {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  type: StorefrontCategoryDiscoveryTileType;
+  /** @minimum 1 */
+  categoryId: number;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  label: string;
+  visible: boolean;
+}
+
+export type StorefrontSortDiscoveryTileType = typeof StorefrontSortDiscoveryTileType[keyof typeof StorefrontSortDiscoveryTileType];
+
+
+export const StorefrontSortDiscoveryTileType = {
+  sort: 'sort',
+} as const;
+
+export type StorefrontSortDiscoveryTileSort = typeof StorefrontSortDiscoveryTileSort[keyof typeof StorefrontSortDiscoveryTileSort];
+
+
+export const StorefrontSortDiscoveryTileSort = {
+  featured: 'featured',
+  'price-asc': 'price-asc',
+  'price-desc': 'price-desc',
+  name: 'name',
+} as const;
+
+export interface StorefrontSortDiscoveryTile {
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  id: string;
+  type: StorefrontSortDiscoveryTileType;
+  sort: StorefrontSortDiscoveryTileSort;
+  /**
+     * @minLength 1
+     * @maxLength 80
+     */
+  label: string;
+  visible: boolean;
+}
+
+export type StorefrontDiscoveryTile = StorefrontCategoryDiscoveryTile | StorefrontSortDiscoveryTile;
+
+export interface DiscoveryTilesConfig {
+  /** @maxItems 12 */
+  discoveryTiles: StorefrontDiscoveryTile[];
+}
+
+export interface DiscoveryTilesUpdate {
+  /** @maxItems 12 */
+  discoveryTiles: StorefrontDiscoveryTile[];
+}
+
 export type StoreFontFamily = typeof StoreFontFamily[keyof typeof StoreFontFamily];
 
 
@@ -101,6 +170,11 @@ export interface Store {
      * @maximum 12
      */
   featuredProductLimit?: number;
+  /**
+     * @maxItems 12
+     * @nullable
+     */
+  discoveryTiles?: StorefrontDiscoveryTile[] | null;
   buttonStyle?: StoreButtonStyle;
   isActive: boolean;
   demoMode: boolean;
@@ -162,6 +236,8 @@ export interface StoreInput {
      * @maximum 12
      */
   featuredProductLimit?: number;
+  /** @maxItems 12 */
+  discoveryTiles?: StorefrontDiscoveryTile[];
   buttonStyle?: StoreInputButtonStyle;
   demoMode?: boolean;
   /**
@@ -213,6 +289,8 @@ export interface StoreUpdate {
      * @maximum 12
      */
   featuredProductLimit?: number;
+  /** @maxItems 12 */
+  discoveryTiles?: StorefrontDiscoveryTile[];
   buttonStyle?: StoreUpdateButtonStyle;
   isActive?: boolean;
   demoMode?: boolean;
@@ -264,6 +342,11 @@ export interface StorefrontConfig {
   /** @nullable */
   featuredSectionDescription?: string | null;
   featuredProductLimit?: number;
+  /**
+     * @maxItems 12
+     * @nullable
+     */
+  discoveryTiles?: StorefrontDiscoveryTile[] | null;
   buttonStyle?: StorefrontConfigButtonStyle;
 }
 

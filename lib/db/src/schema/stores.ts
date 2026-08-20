@@ -1,6 +1,24 @@
-import { pgTable, text, serial, boolean, timestamp, integer } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, boolean, timestamp, integer, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod/v4";
+
+export type StorefrontDiscoveryTile =
+  | {
+      id: string;
+      type: "category";
+      categoryId: number;
+      sort?: never;
+      label: string;
+      visible: boolean;
+    }
+  | {
+      id: string;
+      type: "sort";
+      categoryId?: never;
+      sort: "featured" | "price-asc" | "price-desc" | "name";
+      label: string;
+      visible: boolean;
+    };
 
 export const storesTable = pgTable("stores", {
   id: serial("id").primaryKey(),
@@ -21,6 +39,7 @@ export const storesTable = pgTable("stores", {
   featuredSectionTitle: text("featured_section_title"),
   featuredSectionDescription: text("featured_section_description"),
   featuredProductLimit: integer("featured_product_limit").notNull().default(4),
+  discoveryTiles: jsonb("discovery_tiles").$type<StorefrontDiscoveryTile[] | null>(),
   buttonStyle: text("button_style").notNull().default("square"),
   isActive: boolean("is_active").notNull().default(true),
   demoMode: boolean("demo_mode").notNull().default(true),

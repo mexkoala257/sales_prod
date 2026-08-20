@@ -25,8 +25,12 @@ import {
   UpdateB2BClientBody,
   SetB2BClientProductsBody,
   UpdateOrderStatusBody,
+  UpdateAdminDiscoveryTilesBody,
+  GetAdminDiscoveryTilesResponse,
+  UpdateAdminDiscoveryTilesResponse,
 } from "@workspace/api-zod";
 import { pushProductToShopify, syncShopifyCatalog } from "../lib/shopify";
+import { validateDiscoveryTiles } from "../lib/discovery-tiles";
 
 const router: IRouter = Router();
 
@@ -277,8 +281,56 @@ router.patch("/admin/categories/:categoryId", requireStoreAdmin, async (req, res
 router.delete("/admin/categories/:categoryId", requireStoreAdmin, async (req, res): Promise<void> => {
   const storeId = getStoreId(req);
   const id = parseInt(req.params.categoryId as string, 10);
-  await db.delete(categoriesTable).where(and(eq(categoriesTable.id, id), eq(categoriesTable.storeId, storeId)));
+  await db.transaction(async (tx) => {
+    const [store] = await tx
+      .select({ discoveryTiles: storesTable.discoveryTiles })
+      .from(storesTable)
+      .where(eq(storesTable.id, storeId));
+
+    await tx.delete(categoriesTable).where(and(eq(categoriesTable.id, id), eq(categoriesTable.storeId, storeId)));
+
+    if (store?.discoveryTiles?.some((tile) => tile.type === "category" && tile.categoryId === id)) {
+      await tx
+        .update(storesTable)
+        .set({ discoveryTiles: store.discoveryTiles.filter((tile) => tile.type !== "category" || tile.categoryId !== id) })
+        .where(eq(storesTable.id, storeId));
+    }
+  });
   res.sendStatus(204);
+});
+
+// ── Storefront discovery ──────────────────────────────────────────
+router.get("/admin/discovery-tiles", requireStoreAdmin, async (req, res): Promise<void> => {
+  const storeId = getStoreId(req);
+  const [store] = await db
+    .select({ discoveryTiles: storesTable.discoveryTiles })
+    .from(storesTable)
+    .where(eq(storesTable.id, storeId));
+
+  if (!store) { res.status(404).json({ error: "Store not found" }); return; }
+  res.json(GetAdminDiscoveryTilesResponse.parse({ discoveryTiles: store.discoveryTiles ?? [] }));
+});
+
+router.patch("/admin/discovery-tiles", requireStoreAdmin, async (req, res): Promise<void> => {
+  const storeId = getStoreId(req);
+  const parsed = UpdateAdminDiscoveryTilesBody.safeParse(req.body);
+  if (!parsed.success) {
+    req.log.warn({ validationIssues: parsed.error.issues }, "Invalid discovery-tile update payload");
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const discoveryTilesError = await validateDiscoveryTiles(parsed.data.discoveryTiles, storeId);
+  if (discoveryTilesError) { res.status(400).json({ error: discoveryTilesError }); return; }
+
+  const [store] = await db
+    .update(storesTable)
+    .set({ discoveryTiles: parsed.data.discoveryTiles })
+    .where(eq(storesTable.id, storeId))
+    .returning({ discoveryTiles: storesTable.discoveryTiles });
+
+  if (!store) { res.status(404).json({ error: "Store not found" }); return; }
+  res.json(UpdateAdminDiscoveryTilesResponse.parse({ discoveryTiles: store.discoveryTiles ?? [] }));
 });
 
 // ── B2B Accounts ──────────────────────────────────────────────────

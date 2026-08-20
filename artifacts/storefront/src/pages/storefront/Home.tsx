@@ -1,4 +1,4 @@
-import { useGetStorefrontConfig, useListStorefrontCategories, useListStorefrontProducts } from '@workspace/api-client-react';
+import { useGetStorefrontConfig, useListStorefrontCategories, useListStorefrontProducts, type Product, type StorefrontDiscoveryTile } from '@workspace/api-client-react';
 import { useParams, Link } from 'wouter';
 import { Menu, Search, ShoppingBag, X, ArrowUpRight } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
@@ -19,6 +19,16 @@ function useStorefrontEnabled() {
 
 function productPrice(value: number) {
   return value.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
+}
+
+type DiscoverySort = "featured" | "price-asc" | "price-desc" | "name";
+
+function productForSort(products: Product[] | undefined, sort: DiscoverySort | undefined) {
+  if (!products?.length) return undefined;
+  if (sort === 'price-asc') return [...products].sort((a, b) => a.price - b.price)[0];
+  if (sort === 'price-desc') return [...products].sort((a, b) => b.price - a.price)[0];
+  if (sort === 'name') return [...products].sort((a, b) => a.name.localeCompare(b.name))[0];
+  return products[0];
 }
 
 export function StorefrontLayout({ children }: { children: React.ReactNode }) {
@@ -154,7 +164,7 @@ export default function StorefrontHome() {
   const categoryImage = (categoryId: number) => products?.find((product) => product.categories?.includes(categoryId))?.images?.[0];
   const configuredCategories = categories || [];
   const hasConfiguredCategories = configuredCategories.length > 0;
-  const discoveryTiles = hasConfiguredCategories
+  const fallbackDiscoveryTiles = hasConfiguredCategories
     ? configuredCategories.slice(0, 6).map((category, index) => ({
         key: `category-${category.id}`,
         name: category.name,
@@ -169,6 +179,43 @@ export default function StorefrontHome() {
           { key: 'signature', name: 'Signature pieces', href: '/products?sort=price-desc', image: products[products.length - 1]?.images?.[0], tone: 2 },
         ]
       : [];
+  const savedDiscoveryTiles = config?.discoveryTiles || [];
+  const curatedDiscoveryTiles = savedDiscoveryTiles
+    .filter((tile) => tile.visible)
+    .map((tile, index) => {
+      if (tile.type === 'category') {
+        const category = configuredCategories.find((item) => item.id === tile.categoryId);
+        if (!category) return null;
+        return {
+          key: tile.id,
+          name: tile.label,
+          href: `/products?category=${category.id}`,
+          image: categoryImage(category.id),
+          tone: index % 3,
+        };
+      }
+
+      const product = productForSort(products, tile.sort);
+      if (!tile.sort || !product) return null;
+      return {
+        key: tile.id,
+        name: tile.label,
+        href: `/products?sort=${tile.sort}`,
+        image: product.images?.[0],
+        tone: index % 3,
+      };
+    })
+    .filter((tile): tile is NonNullable<typeof tile> => tile !== null);
+  const hasSavedCuration = savedDiscoveryTiles.length > 0;
+  const hasVisibleSavedTile = savedDiscoveryTiles.some((tile) => tile.visible);
+  const useFallbackTiles = !hasSavedCuration || (hasVisibleSavedTile && curatedDiscoveryTiles.length === 0);
+  const discoveryTiles = useFallbackTiles ? fallbackDiscoveryTiles : curatedDiscoveryTiles;
+  const discoveryTitle = useFallbackTiles
+    ? (hasConfiguredCategories ? 'Shop by category' : 'Explore the collection')
+    : 'Curated for you';
+  const discoveryEyebrow = useFallbackTiles
+    ? (hasConfiguredCategories ? 'Find your favorite' : 'Start here')
+    : 'Chosen for this edit';
 
   return (
     <StorefrontLayout>
@@ -199,7 +246,7 @@ export default function StorefrontHome() {
       {discoveryTiles.length > 0 && (
         <section className="mx-auto max-w-[1440px] px-5 pt-16 md:px-8 md:pt-24">
           <div className="mb-8 flex items-end justify-between gap-6">
-            <div><p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500">{hasConfiguredCategories ? 'Find your favorite' : 'Start here'}</p><h2 className="text-3xl font-semibold tracking-[-0.045em] md:text-5xl">{hasConfiguredCategories ? 'Shop by category' : 'Explore the collection'}</h2></div>
+            <div><p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500">{discoveryEyebrow}</p><h2 className="text-3xl font-semibold tracking-[-0.045em] md:text-5xl">{discoveryTitle}</h2></div>
             <Link href={sp('/products')} className="hidden text-xs font-bold uppercase tracking-[0.16em] underline underline-offset-8 sm:inline-flex">View everything</Link>
           </div>
           <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">

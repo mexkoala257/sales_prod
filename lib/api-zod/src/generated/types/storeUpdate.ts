@@ -5,6 +5,7 @@
  * Multi-Brand Shopify E-Commerce & B2B Wholesale Portal API
  * OpenAPI spec version: 0.1.0
  */
+import type { StorefrontDiscoveryTile } from './storefrontDiscoveryTile';
 import type { StoreUpdateButtonStyle } from './storeUpdateButtonStyle';
 import type { StoreUpdateFontFamily } from './storeUpdateFontFamily';
 
@@ -29,6 +30,8 @@ export interface StoreUpdate {
      * @maximum 12
      */
   featuredProductLimit?: number;
+  /** @maxItems 12 */
+  discoveryTiles?: StorefrontDiscoveryTile[];
   buttonStyle?: StoreUpdateButtonStyle;
   isActive?: boolean;
   demoMode?: boolean;

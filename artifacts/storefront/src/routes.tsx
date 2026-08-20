@@ -20,6 +20,7 @@ import AdminCategories from './pages/admin/Categories';
 import AdminB2BAccounts from './pages/admin/B2BAccounts';
 import AdminB2BForm from './pages/admin/B2BForm';
 import AdminOrders from './pages/admin/Orders';
+import AdminDiscoveryTiles from './pages/admin/DiscoveryTiles';
 
 // B2B
 import B2BLogin from './pages/b2b/Login';
@@ -79,6 +80,7 @@ export function AppRoutes() {
       <Route path="/admin/b2b-accounts/new"><AdminLayout><AdminB2BForm /></AdminLayout></Route>
       <Route path="/admin/b2b-accounts/:id"><AdminLayout><AdminB2BForm /></AdminLayout></Route>
       <Route path="/admin/orders"><AdminLayout><AdminOrders /></AdminLayout></Route>
+      <Route path="/admin/discovery-tiles"><AdminLayout><AdminDiscoveryTiles /></AdminLayout></Route>
 
       {/* ── B2B ──────────────────────────────────────────────────────── */}
       <Route path="/b2b/login" component={B2BLogin} />

@@ -7,6 +7,7 @@
  */
 import type { StoreButtonStyle } from './storeButtonStyle';
 import type { StoreFontFamily } from './storeFontFamily';
+import type { StorefrontDiscoveryTile } from './storefrontDiscoveryTile';
 
 export interface Store {
   id: number;
@@ -42,6 +43,11 @@ export interface Store {
      * @maximum 12
      */
   featuredProductLimit?: number;
+  /**
+     * @maxItems 12
+     * @nullable
+     */
+  discoveryTiles?: StorefrontDiscoveryTile[] | null;
   buttonStyle?: StoreButtonStyle;
   isActive: boolean;
   demoMode: boolean;

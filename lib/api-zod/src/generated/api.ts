@@ -152,6 +152,18 @@ export const GetSuperAdminAnalyticsResponse = zod.object({
  */
 export const listStoresResponseFeaturedProductLimitMax = 12;
 
+export const listStoresResponseDiscoveryTilesItemOneIdMax = 80;
+
+export const listStoresResponseDiscoveryTilesItemOneCategoryIdMultipleOf = 1;
+
+export const listStoresResponseDiscoveryTilesItemOneLabelMax = 80;
+
+export const listStoresResponseDiscoveryTilesItemTwoIdMax = 80;
+
+export const listStoresResponseDiscoveryTilesItemTwoLabelMax = 80;
+
+export const listStoresResponseDiscoveryTilesMax = 12;
+
 
 
 export const ListStoresResponseItem = zod.object({
@@ -173,6 +185,19 @@ export const ListStoresResponseItem = zod.object({
   "featuredSectionTitle": zod.string().nullish(),
   "featuredSectionDescription": zod.string().nullish(),
   "featuredProductLimit": zod.number().min(1).max(listStoresResponseFeaturedProductLimitMax).optional(),
+  "discoveryTiles": zod.array(zod.union([zod.object({
+  "id": zod.string().min(1).max(listStoresResponseDiscoveryTilesItemOneIdMax),
+  "type": zod.enum(['category']),
+  "categoryId": zod.number().min(1).multipleOf(listStoresResponseDiscoveryTilesItemOneCategoryIdMultipleOf),
+  "label": zod.string().min(1).max(listStoresResponseDiscoveryTilesItemOneLabelMax),
+  "visible": zod.boolean()
+}),zod.object({
+  "id": zod.string().min(1).max(listStoresResponseDiscoveryTilesItemTwoIdMax),
+  "type": zod.enum(['sort']),
+  "sort": zod.enum(['featured', 'price-asc', 'price-desc', 'name']),
+  "label": zod.string().min(1).max(listStoresResponseDiscoveryTilesItemTwoLabelMax),
+  "visible": zod.boolean()
+})])).max(listStoresResponseDiscoveryTilesMax).nullish(),
   "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "isActive": zod.boolean(),
   "demoMode": zod.boolean(),
@@ -194,6 +219,18 @@ export const ListStoresResponse = zod.array(ListStoresResponseItem)
  */
 export const createStoreBodyFeaturedProductLimitMax = 12;
 
+export const createStoreBodyDiscoveryTilesItemOneIdMax = 80;
+
+export const createStoreBodyDiscoveryTilesItemOneCategoryIdMultipleOf = 1;
+
+export const createStoreBodyDiscoveryTilesItemOneLabelMax = 80;
+
+export const createStoreBodyDiscoveryTilesItemTwoIdMax = 80;
+
+export const createStoreBodyDiscoveryTilesItemTwoLabelMax = 80;
+
+export const createStoreBodyDiscoveryTilesMax = 12;
+
 
 
 export const CreateStoreBody = zod.object({
@@ -214,6 +251,19 @@ export const CreateStoreBody = zod.object({
   "featuredSectionTitle": zod.string().optional(),
   "featuredSectionDescription": zod.string().optional(),
   "featuredProductLimit": zod.number().min(1).max(createStoreBodyFeaturedProductLimitMax).optional(),
+  "discoveryTiles": zod.array(zod.union([zod.object({
+  "id": zod.string().min(1).max(createStoreBodyDiscoveryTilesItemOneIdMax),
+  "type": zod.enum(['category']),
+  "categoryId": zod.number().min(1).multipleOf(createStoreBodyDiscoveryTilesItemOneCategoryIdMultipleOf),
+  "label": zod.string().min(1).max(createStoreBodyDiscoveryTilesItemOneLabelMax),
+  "visible": zod.boolean()
+}),zod.object({
+  "id": zod.string().min(1).max(createStoreBodyDiscoveryTilesItemTwoIdMax),
+  "type": zod.enum(['sort']),
+  "sort": zod.enum(['featured', 'price-asc', 'price-desc', 'name']),
+  "label": zod.string().min(1).max(createStoreBodyDiscoveryTilesItemTwoLabelMax),
+  "visible": zod.boolean()
+})])).max(createStoreBodyDiscoveryTilesMax).optional(),
   "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "demoMode": zod.boolean().optional(),
   "customDomain": zod.string().nullish().describe('Custom domain pointing at this storefront (apex form, e.g. apexathletics.com). Pass null to clear.'),
@@ -223,6 +273,18 @@ export const CreateStoreBody = zod.object({
 })
 
 export const createStoreResponseFeaturedProductLimitMax = 12;
+
+export const createStoreResponseDiscoveryTilesItemOneIdMax = 80;
+
+export const createStoreResponseDiscoveryTilesItemOneCategoryIdMultipleOf = 1;
+
+export const createStoreResponseDiscoveryTilesItemOneLabelMax = 80;
+
+export const createStoreResponseDiscoveryTilesItemTwoIdMax = 80;
+
+export const createStoreResponseDiscoveryTilesItemTwoLabelMax = 80;
+
+export const createStoreResponseDiscoveryTilesMax = 12;
 
 
 
@@ -245,6 +307,19 @@ export const CreateStoreResponse = zod.object({
   "featuredSectionTitle": zod.string().nullish(),
   "featuredSectionDescription": zod.string().nullish(),
   "featuredProductLimit": zod.number().min(1).max(createStoreResponseFeaturedProductLimitMax).optional(),
+  "discoveryTiles": zod.array(zod.union([zod.object({
+  "id": zod.string().min(1).max(createStoreResponseDiscoveryTilesItemOneIdMax),
+  "type": zod.enum(['category']),
+  "categoryId": zod.number().min(1).multipleOf(createStoreResponseDiscoveryTilesItemOneCategoryIdMultipleOf),
+  "label": zod.string().min(1).max(createStoreResponseDiscoveryTilesItemOneLabelMax),
+  "visible": zod.boolean()
+}),zod.object({
+  "id": zod.string().min(1).max(createStoreResponseDiscoveryTilesItemTwoIdMax),
+  "type": zod.enum(['sort']),
+  "sort": zod.enum(['featured', 'price-asc', 'price-desc', 'name']),
+  "label": zod.string().min(1).max(createStoreResponseDiscoveryTilesItemTwoLabelMax),
+  "visible": zod.boolean()
+})])).max(createStoreResponseDiscoveryTilesMax).nullish(),
   "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "isActive": zod.boolean(),
   "demoMode": zod.boolean(),
@@ -269,6 +344,18 @@ export const GetStoreParams = zod.object({
 
 export const getStoreResponseFeaturedProductLimitMax = 12;
 
+export const getStoreResponseDiscoveryTilesItemOneIdMax = 80;
+
+export const getStoreResponseDiscoveryTilesItemOneCategoryIdMultipleOf = 1;
+
+export const getStoreResponseDiscoveryTilesItemOneLabelMax = 80;
+
+export const getStoreResponseDiscoveryTilesItemTwoIdMax = 80;
+
+export const getStoreResponseDiscoveryTilesItemTwoLabelMax = 80;
+
+export const getStoreResponseDiscoveryTilesMax = 12;
+
 
 
 export const GetStoreResponse = zod.object({
@@ -290,6 +377,19 @@ export const GetStoreResponse = zod.object({
   "featuredSectionTitle": zod.string().nullish(),
   "featuredSectionDescription": zod.string().nullish(),
   "featuredProductLimit": zod.number().min(1).max(getStoreResponseFeaturedProductLimitMax).optional(),
+  "discoveryTiles": zod.array(zod.union([zod.object({
+  "id": zod.string().min(1).max(getStoreResponseDiscoveryTilesItemOneIdMax),
+  "type": zod.enum(['category']),
+  "categoryId": zod.number().min(1).multipleOf(getStoreResponseDiscoveryTilesItemOneCategoryIdMultipleOf),
+  "label": zod.string().min(1).max(getStoreResponseDiscoveryTilesItemOneLabelMax),
+  "visible": zod.boolean()
+}),zod.object({
+  "id": zod.string().min(1).max(getStoreResponseDiscoveryTilesItemTwoIdMax),
+  "type": zod.enum(['sort']),
+  "sort": zod.enum(['featured', 'price-asc', 'price-desc', 'name']),
+  "label": zod.string().min(1).max(getStoreResponseDiscoveryTilesItemTwoLabelMax),
+  "visible": zod.boolean()
+})])).max(getStoreResponseDiscoveryTilesMax).nullish(),
   "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "isActive": zod.boolean(),
   "demoMode": zod.boolean(),
@@ -314,6 +414,18 @@ export const UpdateStoreParams = zod.object({
 
 export const updateStoreBodyFeaturedProductLimitMax = 12;
 
+export const updateStoreBodyDiscoveryTilesItemOneIdMax = 80;
+
+export const updateStoreBodyDiscoveryTilesItemOneCategoryIdMultipleOf = 1;
+
+export const updateStoreBodyDiscoveryTilesItemOneLabelMax = 80;
+
+export const updateStoreBodyDiscoveryTilesItemTwoIdMax = 80;
+
+export const updateStoreBodyDiscoveryTilesItemTwoLabelMax = 80;
+
+export const updateStoreBodyDiscoveryTilesMax = 12;
+
 
 
 export const UpdateStoreBody = zod.object({
@@ -333,6 +445,19 @@ export const UpdateStoreBody = zod.object({
   "featuredSectionTitle": zod.string().optional(),
   "featuredSectionDescription": zod.string().optional(),
   "featuredProductLimit": zod.number().min(1).max(updateStoreBodyFeaturedProductLimitMax).optional(),
+  "discoveryTiles": zod.array(zod.union([zod.object({
+  "id": zod.string().min(1).max(updateStoreBodyDiscoveryTilesItemOneIdMax),
+  "type": zod.enum(['category']),
+  "categoryId": zod.number().min(1).multipleOf(updateStoreBodyDiscoveryTilesItemOneCategoryIdMultipleOf),
+  "label": zod.string().min(1).max(updateStoreBodyDiscoveryTilesItemOneLabelMax),
+  "visible": zod.boolean()
+}),zod.object({
+  "id": zod.string().min(1).max(updateStoreBodyDiscoveryTilesItemTwoIdMax),
+  "type": zod.enum(['sort']),
+  "sort": zod.enum(['featured', 'price-asc', 'price-desc', 'name']),
+  "label": zod.string().min(1).max(updateStoreBodyDiscoveryTilesItemTwoLabelMax),
+  "visible": zod.boolean()
+})])).max(updateStoreBodyDiscoveryTilesMax).optional(),
   "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "isActive": zod.boolean().optional(),
   "demoMode": zod.boolean().optional(),
@@ -343,6 +468,18 @@ export const UpdateStoreBody = zod.object({
 })
 
 export const updateStoreResponseFeaturedProductLimitMax = 12;
+
+export const updateStoreResponseDiscoveryTilesItemOneIdMax = 80;
+
+export const updateStoreResponseDiscoveryTilesItemOneCategoryIdMultipleOf = 1;
+
+export const updateStoreResponseDiscoveryTilesItemOneLabelMax = 80;
+
+export const updateStoreResponseDiscoveryTilesItemTwoIdMax = 80;
+
+export const updateStoreResponseDiscoveryTilesItemTwoLabelMax = 80;
+
+export const updateStoreResponseDiscoveryTilesMax = 12;
 
 
 
@@ -365,6 +502,19 @@ export const UpdateStoreResponse = zod.object({
   "featuredSectionTitle": zod.string().nullish(),
   "featuredSectionDescription": zod.string().nullish(),
   "featuredProductLimit": zod.number().min(1).max(updateStoreResponseFeaturedProductLimitMax).optional(),
+  "discoveryTiles": zod.array(zod.union([zod.object({
+  "id": zod.string().min(1).max(updateStoreResponseDiscoveryTilesItemOneIdMax),
+  "type": zod.enum(['category']),
+  "categoryId": zod.number().min(1).multipleOf(updateStoreResponseDiscoveryTilesItemOneCategoryIdMultipleOf),
+  "label": zod.string().min(1).max(updateStoreResponseDiscoveryTilesItemOneLabelMax),
+  "visible": zod.boolean()
+}),zod.object({
+  "id": zod.string().min(1).max(updateStoreResponseDiscoveryTilesItemTwoIdMax),
+  "type": zod.enum(['sort']),
+  "sort": zod.enum(['featured', 'price-asc', 'price-desc', 'name']),
+  "label": zod.string().min(1).max(updateStoreResponseDiscoveryTilesItemTwoLabelMax),
+  "visible": zod.boolean()
+})])).max(updateStoreResponseDiscoveryTilesMax).nullish(),
   "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "isActive": zod.boolean(),
   "demoMode": zod.boolean(),
@@ -1028,6 +1178,104 @@ export const DeleteCategoryResponse = zod.void()
 
 
 /**
+ * @summary Get discovery tiles for the authenticated store
+ */
+export const getAdminDiscoveryTilesResponseDiscoveryTilesItemOneIdMax = 80;
+
+export const getAdminDiscoveryTilesResponseDiscoveryTilesItemOneCategoryIdMultipleOf = 1;
+
+export const getAdminDiscoveryTilesResponseDiscoveryTilesItemOneLabelMax = 80;
+
+export const getAdminDiscoveryTilesResponseDiscoveryTilesItemTwoIdMax = 80;
+
+export const getAdminDiscoveryTilesResponseDiscoveryTilesItemTwoLabelMax = 80;
+
+export const getAdminDiscoveryTilesResponseDiscoveryTilesMax = 12;
+
+
+
+export const GetAdminDiscoveryTilesResponse = zod.object({
+  "discoveryTiles": zod.array(zod.union([zod.object({
+  "id": zod.string().min(1).max(getAdminDiscoveryTilesResponseDiscoveryTilesItemOneIdMax),
+  "type": zod.enum(['category']),
+  "categoryId": zod.number().min(1).multipleOf(getAdminDiscoveryTilesResponseDiscoveryTilesItemOneCategoryIdMultipleOf),
+  "label": zod.string().min(1).max(getAdminDiscoveryTilesResponseDiscoveryTilesItemOneLabelMax),
+  "visible": zod.boolean()
+}),zod.object({
+  "id": zod.string().min(1).max(getAdminDiscoveryTilesResponseDiscoveryTilesItemTwoIdMax),
+  "type": zod.enum(['sort']),
+  "sort": zod.enum(['featured', 'price-asc', 'price-desc', 'name']),
+  "label": zod.string().min(1).max(getAdminDiscoveryTilesResponseDiscoveryTilesItemTwoLabelMax),
+  "visible": zod.boolean()
+})])).max(getAdminDiscoveryTilesResponseDiscoveryTilesMax)
+})
+
+
+/**
+ * @summary Update discovery tiles for the authenticated store
+ */
+export const updateAdminDiscoveryTilesBodyDiscoveryTilesItemOneIdMax = 80;
+
+export const updateAdminDiscoveryTilesBodyDiscoveryTilesItemOneCategoryIdMultipleOf = 1;
+
+export const updateAdminDiscoveryTilesBodyDiscoveryTilesItemOneLabelMax = 80;
+
+export const updateAdminDiscoveryTilesBodyDiscoveryTilesItemTwoIdMax = 80;
+
+export const updateAdminDiscoveryTilesBodyDiscoveryTilesItemTwoLabelMax = 80;
+
+export const updateAdminDiscoveryTilesBodyDiscoveryTilesMax = 12;
+
+
+
+export const UpdateAdminDiscoveryTilesBody = zod.object({
+  "discoveryTiles": zod.array(zod.union([zod.object({
+  "id": zod.string().min(1).max(updateAdminDiscoveryTilesBodyDiscoveryTilesItemOneIdMax),
+  "type": zod.enum(['category']),
+  "categoryId": zod.number().min(1).multipleOf(updateAdminDiscoveryTilesBodyDiscoveryTilesItemOneCategoryIdMultipleOf),
+  "label": zod.string().min(1).max(updateAdminDiscoveryTilesBodyDiscoveryTilesItemOneLabelMax),
+  "visible": zod.boolean()
+}),zod.object({
+  "id": zod.string().min(1).max(updateAdminDiscoveryTilesBodyDiscoveryTilesItemTwoIdMax),
+  "type": zod.enum(['sort']),
+  "sort": zod.enum(['featured', 'price-asc', 'price-desc', 'name']),
+  "label": zod.string().min(1).max(updateAdminDiscoveryTilesBodyDiscoveryTilesItemTwoLabelMax),
+  "visible": zod.boolean()
+})])).max(updateAdminDiscoveryTilesBodyDiscoveryTilesMax)
+})
+
+export const updateAdminDiscoveryTilesResponseDiscoveryTilesItemOneIdMax = 80;
+
+export const updateAdminDiscoveryTilesResponseDiscoveryTilesItemOneCategoryIdMultipleOf = 1;
+
+export const updateAdminDiscoveryTilesResponseDiscoveryTilesItemOneLabelMax = 80;
+
+export const updateAdminDiscoveryTilesResponseDiscoveryTilesItemTwoIdMax = 80;
+
+export const updateAdminDiscoveryTilesResponseDiscoveryTilesItemTwoLabelMax = 80;
+
+export const updateAdminDiscoveryTilesResponseDiscoveryTilesMax = 12;
+
+
+
+export const UpdateAdminDiscoveryTilesResponse = zod.object({
+  "discoveryTiles": zod.array(zod.union([zod.object({
+  "id": zod.string().min(1).max(updateAdminDiscoveryTilesResponseDiscoveryTilesItemOneIdMax),
+  "type": zod.enum(['category']),
+  "categoryId": zod.number().min(1).multipleOf(updateAdminDiscoveryTilesResponseDiscoveryTilesItemOneCategoryIdMultipleOf),
+  "label": zod.string().min(1).max(updateAdminDiscoveryTilesResponseDiscoveryTilesItemOneLabelMax),
+  "visible": zod.boolean()
+}),zod.object({
+  "id": zod.string().min(1).max(updateAdminDiscoveryTilesResponseDiscoveryTilesItemTwoIdMax),
+  "type": zod.enum(['sort']),
+  "sort": zod.enum(['featured', 'price-asc', 'price-desc', 'name']),
+  "label": zod.string().min(1).max(updateAdminDiscoveryTilesResponseDiscoveryTilesItemTwoLabelMax),
+  "visible": zod.boolean()
+})])).max(updateAdminDiscoveryTilesResponseDiscoveryTilesMax)
+})
+
+
+/**
  * @summary List all B2B wholesale clients
  */
 export const ListB2BClientsResponseItem = zod.object({
@@ -1536,6 +1784,20 @@ export const ResolveStorefrontByDomainQueryParams = zod.object({
   "domain": zod.coerce.string().describe('Custom domain to resolve (e.g. apexathletics.com)')
 })
 
+export const resolveStorefrontByDomainResponseDiscoveryTilesItemOneIdMax = 80;
+
+export const resolveStorefrontByDomainResponseDiscoveryTilesItemOneCategoryIdMultipleOf = 1;
+
+export const resolveStorefrontByDomainResponseDiscoveryTilesItemOneLabelMax = 80;
+
+export const resolveStorefrontByDomainResponseDiscoveryTilesItemTwoIdMax = 80;
+
+export const resolveStorefrontByDomainResponseDiscoveryTilesItemTwoLabelMax = 80;
+
+export const resolveStorefrontByDomainResponseDiscoveryTilesMax = 12;
+
+
+
 export const ResolveStorefrontByDomainResponse = zod.object({
   "id": zod.number(),
   "name": zod.string(),
@@ -1555,6 +1817,19 @@ export const ResolveStorefrontByDomainResponse = zod.object({
   "featuredSectionTitle": zod.string().nullish(),
   "featuredSectionDescription": zod.string().nullish(),
   "featuredProductLimit": zod.number().optional(),
+  "discoveryTiles": zod.array(zod.union([zod.object({
+  "id": zod.string().min(1).max(resolveStorefrontByDomainResponseDiscoveryTilesItemOneIdMax),
+  "type": zod.enum(['category']),
+  "categoryId": zod.number().min(1).multipleOf(resolveStorefrontByDomainResponseDiscoveryTilesItemOneCategoryIdMultipleOf),
+  "label": zod.string().min(1).max(resolveStorefrontByDomainResponseDiscoveryTilesItemOneLabelMax),
+  "visible": zod.boolean()
+}),zod.object({
+  "id": zod.string().min(1).max(resolveStorefrontByDomainResponseDiscoveryTilesItemTwoIdMax),
+  "type": zod.enum(['sort']),
+  "sort": zod.enum(['featured', 'price-asc', 'price-desc', 'name']),
+  "label": zod.string().min(1).max(resolveStorefrontByDomainResponseDiscoveryTilesItemTwoLabelMax),
+  "visible": zod.boolean()
+})])).max(resolveStorefrontByDomainResponseDiscoveryTilesMax).nullish(),
   "buttonStyle": zod.enum(['square', 'rounded']).optional()
 })
 
@@ -1565,6 +1840,20 @@ export const ResolveStorefrontByDomainResponse = zod.object({
 export const GetStorefrontConfigParams = zod.object({
   "storeSlug": zod.coerce.string()
 })
+
+export const getStorefrontConfigResponseDiscoveryTilesItemOneIdMax = 80;
+
+export const getStorefrontConfigResponseDiscoveryTilesItemOneCategoryIdMultipleOf = 1;
+
+export const getStorefrontConfigResponseDiscoveryTilesItemOneLabelMax = 80;
+
+export const getStorefrontConfigResponseDiscoveryTilesItemTwoIdMax = 80;
+
+export const getStorefrontConfigResponseDiscoveryTilesItemTwoLabelMax = 80;
+
+export const getStorefrontConfigResponseDiscoveryTilesMax = 12;
+
+
 
 export const GetStorefrontConfigResponse = zod.object({
   "id": zod.number(),
@@ -1585,6 +1874,19 @@ export const GetStorefrontConfigResponse = zod.object({
   "featuredSectionTitle": zod.string().nullish(),
   "featuredSectionDescription": zod.string().nullish(),
   "featuredProductLimit": zod.number().optional(),
+  "discoveryTiles": zod.array(zod.union([zod.object({
+  "id": zod.string().min(1).max(getStorefrontConfigResponseDiscoveryTilesItemOneIdMax),
+  "type": zod.enum(['category']),
+  "categoryId": zod.number().min(1).multipleOf(getStorefrontConfigResponseDiscoveryTilesItemOneCategoryIdMultipleOf),
+  "label": zod.string().min(1).max(getStorefrontConfigResponseDiscoveryTilesItemOneLabelMax),
+  "visible": zod.boolean()
+}),zod.object({
+  "id": zod.string().min(1).max(getStorefrontConfigResponseDiscoveryTilesItemTwoIdMax),
+  "type": zod.enum(['sort']),
+  "sort": zod.enum(['featured', 'price-asc', 'price-desc', 'name']),
+  "label": zod.string().min(1).max(getStorefrontConfigResponseDiscoveryTilesItemTwoLabelMax),
+  "visible": zod.boolean()
+})])).max(getStorefrontConfigResponseDiscoveryTilesMax).nullish(),
   "buttonStyle": zod.enum(['square', 'rounded']).optional()
 })
 
