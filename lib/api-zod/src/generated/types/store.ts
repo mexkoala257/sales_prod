@@ -5,9 +5,11 @@
  * Multi-Brand Shopify E-Commerce & B2B Wholesale Portal API
  * OpenAPI spec version: 0.1.0
  */
+import type { HomepageSections } from './homepageSections';
 import type { StoreButtonStyle } from './storeButtonStyle';
 import type { StoreFontFamily } from './storeFontFamily';
 import type { StorefrontDiscoveryTile } from './storefrontDiscoveryTile';
+import type { StoreHomepageLayout } from './storeHomepageLayout';
 
 export interface Store {
   id: number;
@@ -48,6 +50,8 @@ export interface Store {
      * @nullable
      */
   discoveryTiles?: StorefrontDiscoveryTile[] | null;
+  homepageLayout?: StoreHomepageLayout;
+  homepageSections?: HomepageSections;
   buttonStyle?: StoreButtonStyle;
   isActive: boolean;
   demoMode: boolean;

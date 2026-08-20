@@ -2,3 +2,4 @@
 - [Vite API proxy setup](vite-proxy.md) — storefront proxies /api to localhost:8080; without this browser calls fail
 - [Shopify catalog sync rules](shopify-catalog-sync.md) — collection mappings establish storefront ownership; OAuth writes require GraphQL and write_products approval
 - [OpenAPI integer codegen](openapi-integer-codegen.md) — model integer-like API fields with number + multipleOf to avoid incompatible generated Zod output
+- [Development schema drift safety](development-schema-drift.md) — never force Drizzle push when it proposes deleting legacy migration records; use additive changes instead

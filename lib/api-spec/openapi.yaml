@@ -759,6 +759,36 @@ paths:
               schema:
                 $ref: "#/components/schemas/DiscoveryTilesConfig"
 
+  /admin/storefront-design:
+    get:
+      operationId: getAdminStorefrontDesign
+      tags: [admin]
+      summary: Get the signed-in store admin's homepage layout and content settings
+      responses:
+        "200":
+          description: Storefront design settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorefrontDesign"
+    patch:
+      operationId: updateAdminStorefrontDesign
+      tags: [admin]
+      summary: Update the signed-in store admin's homepage layout and content settings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/StorefrontDesignUpdate"
+      responses:
+        "200":
+          description: Updated storefront design settings
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StorefrontDesign"
+
   /admin/b2b-accounts:
     get:
       operationId: listB2BClients
@@ -1333,6 +1363,86 @@ components:
           items:
             $ref: "#/components/schemas/StorefrontDiscoveryTile"
 
+    HomepageSections:
+      type: object
+      additionalProperties: false
+      required: [showDiscovery, showValues, showFeatured]
+      properties:
+        showDiscovery:
+          type: boolean
+        showValues:
+          type: boolean
+        showFeatured:
+          type: boolean
+
+    StorefrontDesign:
+      type: object
+      additionalProperties: false
+      required: [homepageLayout, homepageSections, featuredProductLimit]
+      properties:
+        homepageLayout:
+          type: string
+          enum: [editorial, lookbook, collection_grid]
+        homepageSections:
+          $ref: "#/components/schemas/HomepageSections"
+        heroEyebrow:
+          type: ["string", "null"]
+        heroTitle:
+          type: ["string", "null"]
+        heroSubtitle:
+          type: ["string", "null"]
+        heroImageUrl:
+          type: ["string", "null"]
+        heroCtaLabel:
+          type: ["string", "null"]
+        shopNavigationLabel:
+          type: ["string", "null"]
+        featuredSectionTitle:
+          type: ["string", "null"]
+        featuredSectionDescription:
+          type: ["string", "null"]
+        featuredProductLimit:
+          type: number
+          minimum: 1
+          maximum: 12
+
+    StorefrontDesignUpdate:
+      type: object
+      additionalProperties: false
+      properties:
+        homepageLayout:
+          type: string
+          enum: [editorial, lookbook, collection_grid]
+        homepageSections:
+          $ref: "#/components/schemas/HomepageSections"
+        heroEyebrow:
+          type: ["string", "null"]
+          maxLength: 60
+        heroTitle:
+          type: ["string", "null"]
+          maxLength: 120
+        heroSubtitle:
+          type: ["string", "null"]
+          maxLength: 280
+        heroImageUrl:
+          type: ["string", "null"]
+        heroCtaLabel:
+          type: ["string", "null"]
+          maxLength: 40
+        shopNavigationLabel:
+          type: ["string", "null"]
+          maxLength: 30
+        featuredSectionTitle:
+          type: ["string", "null"]
+          maxLength: 80
+        featuredSectionDescription:
+          type: ["string", "null"]
+          maxLength: 220
+        featuredProductLimit:
+          type: number
+          minimum: 1
+          maximum: 12
+
     Store:
       type: object
       required: [id, name, slug, isActive, demoMode, createdAt]
@@ -1381,6 +1491,11 @@ components:
           maxItems: 12
           items:
             $ref: "#/components/schemas/StorefrontDiscoveryTile"
+        homepageLayout:
+          type: string
+          enum: [editorial, lookbook, collection_grid]
+        homepageSections:
+          $ref: "#/components/schemas/HomepageSections"
         buttonStyle:
           type: string
           enum: [square, rounded]
@@ -1454,6 +1569,11 @@ components:
           maxItems: 12
           items:
             $ref: "#/components/schemas/StorefrontDiscoveryTile"
+        homepageLayout:
+          type: string
+          enum: [editorial, lookbook, collection_grid]
+        homepageSections:
+          $ref: "#/components/schemas/HomepageSections"
         buttonStyle:
           type: string
           enum: [square, rounded]
@@ -1512,6 +1632,11 @@ components:
           maxItems: 12
           items:
             $ref: "#/components/schemas/StorefrontDiscoveryTile"
+        homepageLayout:
+          type: string
+          enum: [editorial, lookbook, collection_grid]
+        homepageSections:
+          $ref: "#/components/schemas/HomepageSections"
         buttonStyle:
           type: string
           enum: [square, rounded]
@@ -1574,6 +1699,11 @@ components:
           maxItems: 12
           items:
             $ref: "#/components/schemas/StorefrontDiscoveryTile"
+        homepageLayout:
+          type: string
+          enum: [editorial, lookbook, collection_grid]
+        homepageSections:
+          $ref: "#/components/schemas/HomepageSections"
         buttonStyle:
           type: string
           enum: [square, rounded]

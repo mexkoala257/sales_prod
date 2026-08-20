@@ -1,7 +1,7 @@
 import { useAuth } from '@/context/AuthContext';
 import { Redirect, Route, useLocation } from 'wouter';
 import { Button } from '@/components/ui';
-import { LayoutDashboard, Store, ShoppingBag, Settings, LogOut, Package, Users, Palette, Image } from 'lucide-react';
+import { LayoutDashboard, Store, ShoppingBag, Settings, LogOut, Package, Users, Palette, Image, PanelsTopLeft } from 'lucide-react';
 import { Link } from 'wouter';
 import React from 'react';
 
@@ -85,6 +85,7 @@ export function AdminLayout({ children }: { children: React.ReactNode }) {
           <SidebarItem href="/admin/categories" icon={Settings} label="Categories" />
           <SidebarItem href="/admin/orders" icon={ShoppingBag} label="Orders" />
           <SidebarItem href="/admin/b2b-accounts" icon={Users} label="B2B Clients" />
+          <SidebarItem href="/admin/storefront-design" icon={PanelsTopLeft} label="Storefront Design" />
           <SidebarItem href="/admin/discovery-tiles" icon={Palette} label="Storefront Discovery" />
         </nav>
       </div>

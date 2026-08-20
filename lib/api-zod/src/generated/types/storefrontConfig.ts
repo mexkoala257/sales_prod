@@ -5,7 +5,9 @@
  * Multi-Brand Shopify E-Commerce & B2B Wholesale Portal API
  * OpenAPI spec version: 0.1.0
  */
+import type { HomepageSections } from './homepageSections';
 import type { StorefrontConfigButtonStyle } from './storefrontConfigButtonStyle';
+import type { StorefrontConfigHomepageLayout } from './storefrontConfigHomepageLayout';
 import type { StorefrontDiscoveryTile } from './storefrontDiscoveryTile';
 
 export interface StorefrontConfig {
@@ -43,5 +45,7 @@ export interface StorefrontConfig {
      * @nullable
      */
   discoveryTiles?: StorefrontDiscoveryTile[] | null;
+  homepageLayout?: StorefrontConfigHomepageLayout;
+  homepageSections?: HomepageSections;
   buttonStyle?: StorefrontConfigButtonStyle;
 }

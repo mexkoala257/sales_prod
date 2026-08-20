@@ -1,12 +1,13 @@
 import { useState, useEffect } from 'react';
 import { useLocation, useParams } from 'wouter';
-import { useCreateStore, useUpdateStore, useGetStore, useListStorefrontCategories, StoreInputFontFamily, StoreUpdateFontFamily, StoreInputButtonStyle, StoreUpdateButtonStyle, type StorefrontDiscoveryTile } from '@workspace/api-client-react';
+import { useCreateStore, useUpdateStore, useGetStore, useListStorefrontCategories, StoreInputFontFamily, StoreUpdateFontFamily, StoreInputButtonStyle, StoreUpdateButtonStyle, StoreInputHomepageLayout, StoreUpdateHomepageLayout, type StorefrontDiscoveryTile } from '@workspace/api-client-react';
 import { Card, CardContent, CardHeader, CardTitle, Button, Input, Label, Textarea } from '@/components/ui';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useQueryClient } from '@tanstack/react-query';
 import { getListStoresQueryKey } from '@workspace/api-client-react';
 import { Globe } from 'lucide-react';
 import { DiscoveryTileEditor } from '@/components/DiscoveryTileEditor';
+import { StorefrontLayoutPicker } from '@/components/storefront-layout-picker';
 
 export default function SuperAdminStoreForm() {
   const { id } = useParams();
@@ -37,6 +38,8 @@ export default function SuperAdminStoreForm() {
     featuredSectionDescription: '',
     featuredProductLimit: 4,
     discoveryTiles: [] as StorefrontDiscoveryTile[],
+    homepageLayout: StoreInputHomepageLayout.editorial as StoreInputHomepageLayout | StoreUpdateHomepageLayout,
+    homepageSections: { showDiscovery: true, showValues: true, showFeatured: true },
     buttonStyle: StoreInputButtonStyle.square as StoreInputButtonStyle | StoreUpdateButtonStyle,
     demoMode: false,
     isActive: true,
@@ -61,6 +64,8 @@ export default function SuperAdminStoreForm() {
         featuredSectionDescription: store.featuredSectionDescription || '',
         featuredProductLimit: store.featuredProductLimit || 4,
         discoveryTiles: store.discoveryTiles || [],
+        homepageLayout: (store.homepageLayout || StoreInputHomepageLayout.editorial) as StoreInputHomepageLayout,
+        homepageSections: store.homepageSections || { showDiscovery: true, showValues: true, showFeatured: true },
         buttonStyle: (store.buttonStyle || StoreInputButtonStyle.square) as StoreInputButtonStyle,
         demoMode: store.demoMode,
         isActive: store.isActive,
@@ -171,6 +176,26 @@ export default function SuperAdminStoreForm() {
                 <input type="checkbox" checked={formData.demoMode} onChange={e => setFormData({ ...formData, demoMode: e.target.checked })} className="rounded-none border-input" />
                 <span className="text-sm font-medium">Demo Mode</span>
               </label>
+            </div>
+          </CardContent>
+        </Card>
+
+        <Card className="rounded-none shadow-sm">
+          <CardHeader>
+            <CardTitle>Homepage Layout</CardTitle>
+            <p className="text-sm text-muted-foreground">Choose how this store’s campaign, discovery links, and products are arranged. Existing storefronts keep Editorial until changed.</p>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <StorefrontLayoutPicker value={formData.homepageLayout} onChange={(homepageLayout) => setFormData({ ...formData, homepageLayout })} />
+            <div className="grid gap-3 md:grid-cols-3">
+              {[
+                ['showDiscovery', 'Discovery links'],
+                ['showValues', 'Store story'],
+                ['showFeatured', 'Featured products'],
+              ].map(([key, label]) => {
+                const sectionKey = key as keyof typeof formData.homepageSections;
+                return <label key={key} className="flex cursor-pointer items-center gap-3 border p-3 text-sm transition-colors hover:bg-muted/30"><input type="checkbox" checked={formData.homepageSections[sectionKey]} onChange={(event) => setFormData({ ...formData, homepageSections: { ...formData.homepageSections, [sectionKey]: event.target.checked } })} />{label}</label>;
+              })}
             </div>
           </CardContent>
         </Card>

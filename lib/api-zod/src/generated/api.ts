@@ -198,6 +198,12 @@ export const ListStoresResponseItem = zod.object({
   "label": zod.string().min(1).max(listStoresResponseDiscoveryTilesItemTwoLabelMax),
   "visible": zod.boolean()
 })])).max(listStoresResponseDiscoveryTilesMax).nullish(),
+  "homepageLayout": zod.enum(['editorial', 'lookbook', 'collection_grid']).optional(),
+  "homepageSections": zod.object({
+  "showDiscovery": zod.boolean(),
+  "showValues": zod.boolean(),
+  "showFeatured": zod.boolean()
+}).optional(),
   "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "isActive": zod.boolean(),
   "demoMode": zod.boolean(),
@@ -264,6 +270,12 @@ export const CreateStoreBody = zod.object({
   "label": zod.string().min(1).max(createStoreBodyDiscoveryTilesItemTwoLabelMax),
   "visible": zod.boolean()
 })])).max(createStoreBodyDiscoveryTilesMax).optional(),
+  "homepageLayout": zod.enum(['editorial', 'lookbook', 'collection_grid']).optional(),
+  "homepageSections": zod.object({
+  "showDiscovery": zod.boolean(),
+  "showValues": zod.boolean(),
+  "showFeatured": zod.boolean()
+}).optional(),
   "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "demoMode": zod.boolean().optional(),
   "customDomain": zod.string().nullish().describe('Custom domain pointing at this storefront (apex form, e.g. apexathletics.com). Pass null to clear.'),
@@ -320,6 +332,12 @@ export const CreateStoreResponse = zod.object({
   "label": zod.string().min(1).max(createStoreResponseDiscoveryTilesItemTwoLabelMax),
   "visible": zod.boolean()
 })])).max(createStoreResponseDiscoveryTilesMax).nullish(),
+  "homepageLayout": zod.enum(['editorial', 'lookbook', 'collection_grid']).optional(),
+  "homepageSections": zod.object({
+  "showDiscovery": zod.boolean(),
+  "showValues": zod.boolean(),
+  "showFeatured": zod.boolean()
+}).optional(),
   "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "isActive": zod.boolean(),
   "demoMode": zod.boolean(),
@@ -390,6 +408,12 @@ export const GetStoreResponse = zod.object({
   "label": zod.string().min(1).max(getStoreResponseDiscoveryTilesItemTwoLabelMax),
   "visible": zod.boolean()
 })])).max(getStoreResponseDiscoveryTilesMax).nullish(),
+  "homepageLayout": zod.enum(['editorial', 'lookbook', 'collection_grid']).optional(),
+  "homepageSections": zod.object({
+  "showDiscovery": zod.boolean(),
+  "showValues": zod.boolean(),
+  "showFeatured": zod.boolean()
+}).optional(),
   "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "isActive": zod.boolean(),
   "demoMode": zod.boolean(),
@@ -458,6 +482,12 @@ export const UpdateStoreBody = zod.object({
   "label": zod.string().min(1).max(updateStoreBodyDiscoveryTilesItemTwoLabelMax),
   "visible": zod.boolean()
 })])).max(updateStoreBodyDiscoveryTilesMax).optional(),
+  "homepageLayout": zod.enum(['editorial', 'lookbook', 'collection_grid']).optional(),
+  "homepageSections": zod.object({
+  "showDiscovery": zod.boolean(),
+  "showValues": zod.boolean(),
+  "showFeatured": zod.boolean()
+}).optional(),
   "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "isActive": zod.boolean().optional(),
   "demoMode": zod.boolean().optional(),
@@ -515,6 +545,12 @@ export const UpdateStoreResponse = zod.object({
   "label": zod.string().min(1).max(updateStoreResponseDiscoveryTilesItemTwoLabelMax),
   "visible": zod.boolean()
 })])).max(updateStoreResponseDiscoveryTilesMax).nullish(),
+  "homepageLayout": zod.enum(['editorial', 'lookbook', 'collection_grid']).optional(),
+  "homepageSections": zod.object({
+  "showDiscovery": zod.boolean(),
+  "showValues": zod.boolean(),
+  "showFeatured": zod.boolean()
+}).optional(),
   "buttonStyle": zod.enum(['square', 'rounded']).optional(),
   "isActive": zod.boolean(),
   "demoMode": zod.boolean(),
@@ -1276,6 +1312,94 @@ export const UpdateAdminDiscoveryTilesResponse = zod.object({
 
 
 /**
+ * @summary Get the signed-in store admin's homepage layout and content settings
+ */
+export const getAdminStorefrontDesignResponseFeaturedProductLimitMax = 12;
+
+
+
+export const GetAdminStorefrontDesignResponse = zod.object({
+  "homepageLayout": zod.enum(['editorial', 'lookbook', 'collection_grid']),
+  "homepageSections": zod.object({
+  "showDiscovery": zod.boolean(),
+  "showValues": zod.boolean(),
+  "showFeatured": zod.boolean()
+}),
+  "heroEyebrow": zod.string().nullish(),
+  "heroTitle": zod.string().nullish(),
+  "heroSubtitle": zod.string().nullish(),
+  "heroImageUrl": zod.string().nullish(),
+  "heroCtaLabel": zod.string().nullish(),
+  "shopNavigationLabel": zod.string().nullish(),
+  "featuredSectionTitle": zod.string().nullish(),
+  "featuredSectionDescription": zod.string().nullish(),
+  "featuredProductLimit": zod.number().min(1).max(getAdminStorefrontDesignResponseFeaturedProductLimitMax)
+})
+
+
+/**
+ * @summary Update the signed-in store admin's homepage layout and content settings
+ */
+export const updateAdminStorefrontDesignBodyHeroEyebrowMax = 60;
+
+export const updateAdminStorefrontDesignBodyHeroTitleMax = 120;
+
+export const updateAdminStorefrontDesignBodyHeroSubtitleMax = 280;
+
+export const updateAdminStorefrontDesignBodyHeroCtaLabelMax = 40;
+
+export const updateAdminStorefrontDesignBodyShopNavigationLabelMax = 30;
+
+export const updateAdminStorefrontDesignBodyFeaturedSectionTitleMax = 80;
+
+export const updateAdminStorefrontDesignBodyFeaturedSectionDescriptionMax = 220;
+
+export const updateAdminStorefrontDesignBodyFeaturedProductLimitMax = 12;
+
+
+
+export const UpdateAdminStorefrontDesignBody = zod.object({
+  "homepageLayout": zod.enum(['editorial', 'lookbook', 'collection_grid']).optional(),
+  "homepageSections": zod.object({
+  "showDiscovery": zod.boolean(),
+  "showValues": zod.boolean(),
+  "showFeatured": zod.boolean()
+}).optional(),
+  "heroEyebrow": zod.string().max(updateAdminStorefrontDesignBodyHeroEyebrowMax).nullish(),
+  "heroTitle": zod.string().max(updateAdminStorefrontDesignBodyHeroTitleMax).nullish(),
+  "heroSubtitle": zod.string().max(updateAdminStorefrontDesignBodyHeroSubtitleMax).nullish(),
+  "heroImageUrl": zod.string().nullish(),
+  "heroCtaLabel": zod.string().max(updateAdminStorefrontDesignBodyHeroCtaLabelMax).nullish(),
+  "shopNavigationLabel": zod.string().max(updateAdminStorefrontDesignBodyShopNavigationLabelMax).nullish(),
+  "featuredSectionTitle": zod.string().max(updateAdminStorefrontDesignBodyFeaturedSectionTitleMax).nullish(),
+  "featuredSectionDescription": zod.string().max(updateAdminStorefrontDesignBodyFeaturedSectionDescriptionMax).nullish(),
+  "featuredProductLimit": zod.number().min(1).max(updateAdminStorefrontDesignBodyFeaturedProductLimitMax).optional()
+})
+
+export const updateAdminStorefrontDesignResponseFeaturedProductLimitMax = 12;
+
+
+
+export const UpdateAdminStorefrontDesignResponse = zod.object({
+  "homepageLayout": zod.enum(['editorial', 'lookbook', 'collection_grid']),
+  "homepageSections": zod.object({
+  "showDiscovery": zod.boolean(),
+  "showValues": zod.boolean(),
+  "showFeatured": zod.boolean()
+}),
+  "heroEyebrow": zod.string().nullish(),
+  "heroTitle": zod.string().nullish(),
+  "heroSubtitle": zod.string().nullish(),
+  "heroImageUrl": zod.string().nullish(),
+  "heroCtaLabel": zod.string().nullish(),
+  "shopNavigationLabel": zod.string().nullish(),
+  "featuredSectionTitle": zod.string().nullish(),
+  "featuredSectionDescription": zod.string().nullish(),
+  "featuredProductLimit": zod.number().min(1).max(updateAdminStorefrontDesignResponseFeaturedProductLimitMax)
+})
+
+
+/**
  * @summary List all B2B wholesale clients
  */
 export const ListB2BClientsResponseItem = zod.object({
@@ -1830,6 +1954,12 @@ export const ResolveStorefrontByDomainResponse = zod.object({
   "label": zod.string().min(1).max(resolveStorefrontByDomainResponseDiscoveryTilesItemTwoLabelMax),
   "visible": zod.boolean()
 })])).max(resolveStorefrontByDomainResponseDiscoveryTilesMax).nullish(),
+  "homepageLayout": zod.enum(['editorial', 'lookbook', 'collection_grid']).optional(),
+  "homepageSections": zod.object({
+  "showDiscovery": zod.boolean(),
+  "showValues": zod.boolean(),
+  "showFeatured": zod.boolean()
+}).optional(),
   "buttonStyle": zod.enum(['square', 'rounded']).optional()
 })
 
@@ -1887,6 +2017,12 @@ export const GetStorefrontConfigResponse = zod.object({
   "label": zod.string().min(1).max(getStorefrontConfigResponseDiscoveryTilesItemTwoLabelMax),
   "visible": zod.boolean()
 })])).max(getStorefrontConfigResponseDiscoveryTilesMax).nullish(),
+  "homepageLayout": zod.enum(['editorial', 'lookbook', 'collection_grid']).optional(),
+  "homepageSections": zod.object({
+  "showDiscovery": zod.boolean(),
+  "showValues": zod.boolean(),
+  "showFeatured": zod.boolean()
+}).optional(),
   "buttonStyle": zod.enum(['square', 'rounded']).optional()
 })
 

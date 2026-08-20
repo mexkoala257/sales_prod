@@ -68,6 +68,8 @@ function storeConfigResponse(store: typeof storesTable.$inferSelect) {
     featuredSectionDescription: store.featuredSectionDescription,
     featuredProductLimit: store.featuredProductLimit,
     discoveryTiles: store.discoveryTiles,
+    homepageLayout: store.homepageLayout,
+    homepageSections: store.homepageSections,
     buttonStyle: store.buttonStyle,
   };
 }

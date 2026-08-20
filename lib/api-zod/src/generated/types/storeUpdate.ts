@@ -5,9 +5,11 @@
  * Multi-Brand Shopify E-Commerce & B2B Wholesale Portal API
  * OpenAPI spec version: 0.1.0
  */
+import type { HomepageSections } from './homepageSections';
 import type { StorefrontDiscoveryTile } from './storefrontDiscoveryTile';
 import type { StoreUpdateButtonStyle } from './storeUpdateButtonStyle';
 import type { StoreUpdateFontFamily } from './storeUpdateFontFamily';
+import type { StoreUpdateHomepageLayout } from './storeUpdateHomepageLayout';
 
 export interface StoreUpdate {
   name?: string;
@@ -32,6 +34,8 @@ export interface StoreUpdate {
   featuredProductLimit?: number;
   /** @maxItems 12 */
   discoveryTiles?: StorefrontDiscoveryTile[];
+  homepageLayout?: StoreUpdateHomepageLayout;
+  homepageSections?: HomepageSections;
   buttonStyle?: StoreUpdateButtonStyle;
   isActive?: boolean;
   demoMode?: boolean;

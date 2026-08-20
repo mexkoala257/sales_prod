@@ -64,6 +64,8 @@ import type {
   StoreInput,
   StoreUpdate,
   StorefrontConfig,
+  StorefrontDesign,
+  StorefrontDesignUpdate,
   TestEmailResult,
   WholesaleOrderInput
 } from './api.schemas';
@@ -3185,6 +3187,154 @@ export const useUpdateAdminDiscoveryTiles = <TError = ErrorType<unknown>,
         TContext
       > => {
       return useMutation(getUpdateAdminDiscoveryTilesMutationOptions(options));
+    }
+
+export const getGetAdminStorefrontDesignUrl = () => {
+
+
+
+
+  return `/api/admin/storefront-design`
+}
+
+/**
+ * @summary Get the signed-in store admin's homepage layout and content settings
+ */
+export const getAdminStorefrontDesign = async ( options?: Parameters<typeof customFetch>[1]): Promise<StorefrontDesign> => {
+
+  return customFetch<StorefrontDesign>(getGetAdminStorefrontDesignUrl(),
+  {
+    ...options,
+    method: 'GET'
+
+
+  }
+);}
+
+
+
+
+
+export const getGetAdminStorefrontDesignQueryKey = () => {
+    return [
+    `/api/admin/storefront-design`
+    ] as const;
+    }
+
+
+export const getGetAdminStorefrontDesignQueryOptions = <TData = Awaited<ReturnType<typeof getAdminStorefrontDesign>>, TError = ErrorType<unknown>>( options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminStorefrontDesign>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+) => {
+
+const {query: queryOptions, request: requestOptions} = options ?? {};
+
+  const queryKey =  queryOptions?.queryKey ?? getGetAdminStorefrontDesignQueryKey();
+
+
+
+    const queryFn: QueryFunction<Awaited<ReturnType<typeof getAdminStorefrontDesign>>> = ({ signal }) => getAdminStorefrontDesign({ signal, ...requestOptions });
+
+
+
+
+
+   return  { queryKey, queryFn, ...queryOptions} as UseQueryOptions<Awaited<ReturnType<typeof getAdminStorefrontDesign>>, TError, TData> & { queryKey: QueryKey }
+}
+
+export type GetAdminStorefrontDesignQueryResult = NonNullable<Awaited<ReturnType<typeof getAdminStorefrontDesign>>>
+export type GetAdminStorefrontDesignQueryError = ErrorType<unknown>
+
+
+/**
+ * @summary Get the signed-in store admin's homepage layout and content settings
+ */
+
+export function useGetAdminStorefrontDesign<TData = Awaited<ReturnType<typeof getAdminStorefrontDesign>>, TError = ErrorType<unknown>>(
+  options?: { query?:UseQueryOptions<Awaited<ReturnType<typeof getAdminStorefrontDesign>>, TError, TData>, request?: SecondParameter<typeof customFetch>}
+
+ ):  UseQueryResult<TData, TError> & { queryKey: QueryKey } {
+
+  const queryOptions = getGetAdminStorefrontDesignQueryOptions(options)
+
+  const query = useQuery(queryOptions) as  UseQueryResult<TData, TError> & { queryKey: QueryKey };
+
+  return withQueryKey(query, queryOptions.queryKey);
+}
+
+
+
+
+
+
+
+export const getUpdateAdminStorefrontDesignUrl = () => {
+
+
+
+
+  return `/api/admin/storefront-design`
+}
+
+/**
+ * @summary Update the signed-in store admin's homepage layout and content settings
+ */
+export const updateAdminStorefrontDesign = async (storefrontDesignUpdate: StorefrontDesignUpdate, options?: Parameters<typeof customFetch>[1]): Promise<StorefrontDesign> => {
+
+  return customFetch<StorefrontDesign>(getUpdateAdminStorefrontDesignUrl(),
+  {
+    ...options,
+    method: 'PATCH',
+    headers: { 'Content-Type': 'application/json', ...options?.headers },
+    body: JSON.stringify(storefrontDesignUpdate)
+  }
+);}
+
+
+
+
+
+export const getUpdateAdminStorefrontDesignMutationOptions = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminStorefrontDesign>>, TError,{data: BodyType<StorefrontDesignUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+): UseMutationOptions<Awaited<ReturnType<typeof updateAdminStorefrontDesign>>, TError,{data: BodyType<StorefrontDesignUpdate>}, TContext> => {
+
+const mutationKey = ['updateAdminStorefrontDesign'];
+const {mutation: mutationOptions, request: requestOptions} = options ?
+      options.mutation && 'mutationKey' in options.mutation && options.mutation.mutationKey ?
+      options
+      : {...options, mutation: {...options.mutation, mutationKey}}
+      : {mutation: { mutationKey, }, request: undefined};
+
+
+
+
+      const mutationFn: MutationFunction<Awaited<ReturnType<typeof updateAdminStorefrontDesign>>, {data: BodyType<StorefrontDesignUpdate>}> = (props) => {
+          const {data} = props ?? {};
+
+          return  updateAdminStorefrontDesign(data,requestOptions)
+        }
+
+
+
+
+
+
+  return  { mutationFn, ...mutationOptions }}
+
+    export type UpdateAdminStorefrontDesignMutationResult = NonNullable<Awaited<ReturnType<typeof updateAdminStorefrontDesign>>>
+    export type UpdateAdminStorefrontDesignMutationBody = BodyType<StorefrontDesignUpdate>
+    export type UpdateAdminStorefrontDesignMutationError = ErrorType<unknown>
+
+    /**
+ * @summary Update the signed-in store admin's homepage layout and content settings
+ */
+export const useUpdateAdminStorefrontDesign = <TError = ErrorType<unknown>,
+    TContext = unknown>(options?: { mutation?:UseMutationOptions<Awaited<ReturnType<typeof updateAdminStorefrontDesign>>, TError,{data: BodyType<StorefrontDesignUpdate>}, TContext>, request?: SecondParameter<typeof customFetch>}
+ ): UseMutationResult<
+        Awaited<ReturnType<typeof updateAdminStorefrontDesign>>,
+        TError,
+        {data: BodyType<StorefrontDesignUpdate>},
+        TContext
+      > => {
+      return useMutation(getUpdateAdminStorefrontDesignMutationOptions(options));
     }
 
 export const getListB2BClientsUrl = () => {

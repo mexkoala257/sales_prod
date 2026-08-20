@@ -20,6 +20,14 @@ export type StorefrontDiscoveryTile =
       visible: boolean;
     };
 
+export type HomepageLayout = "editorial" | "lookbook" | "collection_grid";
+
+export type HomepageSections = {
+  showDiscovery: boolean;
+  showValues: boolean;
+  showFeatured: boolean;
+};
+
 export const storesTable = pgTable("stores", {
   id: serial("id").primaryKey(),
   name: text("name").notNull(),
@@ -40,6 +48,12 @@ export const storesTable = pgTable("stores", {
   featuredSectionDescription: text("featured_section_description"),
   featuredProductLimit: integer("featured_product_limit").notNull().default(4),
   discoveryTiles: jsonb("discovery_tiles").$type<StorefrontDiscoveryTile[] | null>(),
+  homepageLayout: text("homepage_layout").$type<HomepageLayout>().notNull().default("editorial"),
+  homepageSections: jsonb("homepage_sections").$type<HomepageSections>().notNull().default({
+    showDiscovery: true,
+    showValues: true,
+    showFeatured: true,
+  }),
   buttonStyle: text("button_style").notNull().default("square"),
   isActive: boolean("is_active").notNull().default(true),
   demoMode: boolean("demo_mode").notNull().default(true),

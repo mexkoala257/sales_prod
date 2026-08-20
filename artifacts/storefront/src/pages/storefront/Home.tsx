@@ -4,7 +4,7 @@ import { Menu, Search, ShoppingBag, X, ArrowUpRight } from 'lucide-react';
 import React, { useEffect, useState } from 'react';
 import { useStorefront } from '@/context/StorefrontContext';
 import { useCartCount } from '@/lib/useCartCount';
-import { StorefrontImage } from '@/components/storefront-image';
+import { StorefrontCollectionGrid, StorefrontEditorial, StorefrontLookbook } from '@/components/storefront-homepage-layouts';
 
 function useStorefrontEnabled() {
   const [enabled, setEnabled] = useState<boolean | null>(null);
@@ -15,10 +15,6 @@ function useStorefrontEnabled() {
       .catch(() => setEnabled(true));
   }, []);
   return enabled;
-}
-
-function productPrice(value: number) {
-  return value.toLocaleString(undefined, { style: 'currency', currency: 'USD' });
 }
 
 type DiscoverySort = "featured" | "price-asc" | "price-desc" | "name";
@@ -158,9 +154,6 @@ export default function StorefrontHome() {
   const [heroImageFailed, setHeroImageFailed] = useState(false);
   useEffect(() => setHeroImageFailed(false), [config?.heroImageUrl]);
   const featuredLimit = Math.min(12, Math.max(1, config?.featuredProductLimit || 4));
-  const heroTitle = config?.heroTitle || 'The pieces you reach for, on repeat.';
-  const heroSubtitle = config?.heroSubtitle || 'Considered essentials and new favorites, curated for everyday rituals.';
-  const shopLabel = config?.shopNavigationLabel || 'Shop';
   const categoryImage = (categoryId: number) => products?.find((product) => product.categories?.includes(categoryId))?.images?.[0];
   const configuredCategories = categories || [];
   const hasConfiguredCategories = configuredCategories.length > 0;
@@ -217,92 +210,26 @@ export default function StorefrontHome() {
     ? (hasConfiguredCategories ? 'Find your favorite' : 'Start here')
     : 'Chosen for this edit';
 
+  if (!config) {
+    return <StorefrontLayout><div className="grid min-h-[60vh] place-items-center text-sm text-stone-500">Loading storefront</div></StorefrontLayout>;
+  }
+
+  const layoutProps = {
+    config,
+    products: products || [],
+    isLoading,
+    featuredLimit,
+    discoveryTiles,
+    discoveryTitle,
+    discoveryEyebrow,
+    heroImageFailed,
+    onHeroImageError: () => setHeroImageFailed(true),
+    storePath: sp,
+  };
+
   return (
     <StorefrontLayout>
-      <section className="mx-auto max-w-[1440px] px-0 md:px-4 md:pt-4">
-        <div className="relative grid min-h-[620px] overflow-hidden bg-[var(--brand-accent)] md:min-h-[680px] md:grid-cols-[1.05fr_0.95fr]">
-          <div className="relative z-10 flex items-end px-6 py-12 md:px-12 md:py-16">
-            <div className="max-w-2xl">
-              {config?.heroEyebrow && <p className="mb-5 text-[10px] font-bold uppercase tracking-[0.22em] text-stone-700">{config.heroEyebrow}</p>}
-              <h1 className="max-w-xl text-5xl font-semibold leading-[0.95] tracking-[-0.065em] text-stone-950 sm:text-6xl md:text-7xl lg:text-8xl">{heroTitle}</h1>
-              <p className="mt-7 max-w-md text-base leading-7 text-stone-700 md:text-lg">{heroSubtitle}</p>
-              <Link href={sp('/products')} className="storefront-button mt-9 inline-flex h-12 items-center gap-3 bg-[var(--brand-primary)] px-6 text-xs font-bold uppercase tracking-[0.15em] text-white transition-transform hover:-translate-y-0.5">
-                {config?.heroCtaLabel || 'Shop the collection'} <ArrowUpRight className="h-4 w-4" />
-              </Link>
-            </div>
-          </div>
-          <div className="relative min-h-[360px] bg-stone-300 md:min-h-0">
-            {config?.heroImageUrl && !heroImageFailed ? (
-              <img src={config.heroImageUrl} alt="" className="absolute inset-0 h-full w-full object-cover" onError={() => setHeroImageFailed(true)} />
-            ) : (
-              <div className="absolute inset-0 bg-[radial-gradient(circle_at_65%_35%,rgba(255,255,255,0.7),transparent_0_32%),linear-gradient(135deg,rgba(255,255,255,0.2),rgba(0,0,0,0.11))]" />
-            )}
-            <div className="absolute inset-0 bg-gradient-to-t from-stone-900/20 via-transparent to-transparent" />
-            <div className="absolute bottom-6 right-6 border border-white/70 px-3 py-2 text-[9px] font-bold uppercase tracking-[0.18em] text-white">Selected for now</div>
-          </div>
-        </div>
-      </section>
-
-      {discoveryTiles.length > 0 && (
-        <section className="mx-auto max-w-[1440px] px-5 pt-16 md:px-8 md:pt-24">
-          <div className="mb-8 flex items-end justify-between gap-6">
-            <div><p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500">{discoveryEyebrow}</p><h2 className="text-3xl font-semibold tracking-[-0.045em] md:text-5xl">{discoveryTitle}</h2></div>
-            <Link href={sp('/products')} className="hidden text-xs font-bold uppercase tracking-[0.16em] underline underline-offset-8 sm:inline-flex">View everything</Link>
-          </div>
-          <div className="grid grid-cols-2 gap-3 md:grid-cols-3 lg:grid-cols-6">
-            {discoveryTiles.map((tile) => {
-              return <a key={tile.key} href={sp(tile.href)} className="group relative aspect-square overflow-hidden bg-stone-200">
-                <StorefrontImage src={tile.image?.url} alt={tile.image?.altText || tile.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.05]" fallbackClassName={`storefront-category-fallback storefront-category-fallback-${tile.tone}`} fallbackLabel={tile.name.slice(0, 2)} />
-                <div className="absolute inset-0 bg-gradient-to-t from-stone-950/60 via-transparent to-transparent" />
-                <div className="absolute bottom-0 left-0 right-0 flex items-end justify-between p-4 text-white"><span className="text-sm font-medium">{tile.name}</span><ArrowUpRight className="h-4 w-4 opacity-0 transition-opacity group-hover:opacity-100" /></div>
-              </a>;
-            })}
-          </div>
-        </section>
-      )}
-
-      <section className="mx-auto max-w-[1440px] px-5 pt-16 md:px-8 md:pt-24">
-        <div className="grid border-y border-stone-200 md:grid-cols-3">
-          {[['Made for togetherness', 'Thoughtful pieces for game nights, weekends, and everyday rituals.'], ['Choose with confidence', 'Clear product details, flexible options, and a simple shopping path.'], ['Shop your way', 'Discover by category, search the collection, and check out securely with Shopify.']].map(([title, description], index) => <div key={title} className={`px-0 py-7 md:px-8 md:py-9 ${index > 0 ? 'md:border-l md:border-stone-200' : ''}`}><p className="text-xs font-bold uppercase tracking-[0.14em] text-[var(--brand-primary)]">0{index + 1}</p><h3 className="mt-4 text-xl font-semibold tracking-[-0.035em]">{title}</h3><p className="mt-3 max-w-xs text-sm leading-6 text-stone-500">{description}</p></div>)}
-        </div>
-      </section>
-
-      <section className="mx-auto max-w-[1440px] px-5 py-16 md:px-8 md:py-28">
-        <div className="mb-10 grid gap-5 md:grid-cols-[1fr_auto] md:items-end md:gap-10">
-          <div className="max-w-xl">
-            <p className="mb-3 text-[10px] font-bold uppercase tracking-[0.2em] text-stone-500">The edit</p>
-            <h2 className="text-3xl font-semibold tracking-[-0.045em] md:text-5xl">{config?.featuredSectionTitle || 'Featured arrivals'}</h2>
-            {config?.featuredSectionDescription && <p className="mt-4 text-sm leading-6 text-stone-500 md:text-base">{config.featuredSectionDescription}</p>}
-          </div>
-          <Link href={sp('/products')} className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-[0.16em] underline underline-offset-8">{shopLabel} all <ArrowUpRight className="h-4 w-4" /></Link>
-        </div>
-        {isLoading ? (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-9 md:grid-cols-4 md:gap-x-6">
-            {Array.from({ length: featuredLimit }).map((_, index) => <div key={index} className="space-y-3"><div className="storefront-skeleton aspect-[4/5]" /><div className="storefront-skeleton h-4 w-3/4" /><div className="storefront-skeleton h-3 w-1/3" /></div>)}
-          </div>
-        ) : products?.length ? (
-          <div className="grid grid-cols-2 gap-x-4 gap-y-9 md:grid-cols-4 md:gap-x-6">
-            {products.slice(0, featuredLimit).map((product) => (
-              <Link key={product.id} href={sp(`/products/${product.id}`)} className="group block">
-                <div className="relative mb-3 aspect-[4/5] overflow-hidden bg-stone-100">
-                  <StorefrontImage src={product.images?.[0]?.url} alt={product.images?.[0]?.altText || product.name} className="h-full w-full object-cover transition duration-700 group-hover:scale-[1.035]" />
-                  {product.preOrder && <span className="absolute left-3 top-3 bg-white px-2.5 py-1.5 text-[9px] font-bold uppercase tracking-[0.14em] text-stone-900">Pre-order</span>}
-                </div>
-                <div className="flex items-start justify-between gap-3">
-                  <h3 className="text-sm font-medium leading-5">{product.name}</h3>
-                  <span className="shrink-0 text-sm tabular-nums">{productPrice(product.price)}</span>
-                </div>
-                {product.compareAtPrice && product.compareAtPrice > product.price && <p className="mt-1 text-xs text-stone-400 line-through">{productPrice(product.compareAtPrice)}</p>}
-              </Link>
-            ))}
-          </div>
-        ) : (
-          <div className="border-y border-stone-200 py-16 text-center">
-            <p className="font-serif text-2xl">The collection is taking shape.</p>
-            <p className="mt-2 text-sm text-stone-500">Check back soon for new arrivals.</p>
-          </div>
-        )}
-      </section>
+      {config.homepageLayout === 'lookbook' ? <StorefrontLookbook {...layoutProps} /> : config.homepageLayout === 'collection_grid' ? <StorefrontCollectionGrid {...layoutProps} /> : <StorefrontEditorial {...layoutProps} />}
     </StorefrontLayout>
   );
 }

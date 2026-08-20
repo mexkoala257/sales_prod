@@ -28,6 +28,9 @@ import {
   UpdateAdminDiscoveryTilesBody,
   GetAdminDiscoveryTilesResponse,
   UpdateAdminDiscoveryTilesResponse,
+  GetAdminStorefrontDesignResponse,
+  UpdateAdminStorefrontDesignBody,
+  UpdateAdminStorefrontDesignResponse,
 } from "@workspace/api-zod";
 import { pushProductToShopify, syncShopifyCatalog } from "../lib/shopify";
 import { validateDiscoveryTiles } from "../lib/discovery-tiles";
@@ -36,6 +39,22 @@ const router: IRouter = Router();
 
 function getStoreId(req: any): number {
   return (req.user as JwtPayload).storeId!;
+}
+
+function storefrontDesignResponse(store: typeof storesTable.$inferSelect) {
+  return {
+    homepageLayout: store.homepageLayout,
+    homepageSections: store.homepageSections,
+    heroEyebrow: store.heroEyebrow,
+    heroTitle: store.heroTitle,
+    heroSubtitle: store.heroSubtitle,
+    heroImageUrl: store.heroImageUrl,
+    heroCtaLabel: store.heroCtaLabel,
+    shopNavigationLabel: store.shopNavigationLabel,
+    featuredSectionTitle: store.featuredSectionTitle,
+    featuredSectionDescription: store.featuredSectionDescription,
+    featuredProductLimit: store.featuredProductLimit,
+  };
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────
@@ -331,6 +350,32 @@ router.patch("/admin/discovery-tiles", requireStoreAdmin, async (req, res): Prom
 
   if (!store) { res.status(404).json({ error: "Store not found" }); return; }
   res.json(UpdateAdminDiscoveryTilesResponse.parse({ discoveryTiles: store.discoveryTiles ?? [] }));
+});
+
+// ── Storefront design ─────────────────────────────────────────────
+router.get("/admin/storefront-design", requireStoreAdmin, async (req, res): Promise<void> => {
+  const storeId = getStoreId(req);
+  const [store] = await db.select().from(storesTable).where(eq(storesTable.id, storeId));
+  if (!store) { res.status(404).json({ error: "Store not found" }); return; }
+  res.json(GetAdminStorefrontDesignResponse.parse(storefrontDesignResponse(store)));
+});
+
+router.patch("/admin/storefront-design", requireStoreAdmin, async (req, res): Promise<void> => {
+  const storeId = getStoreId(req);
+  const parsed = UpdateAdminStorefrontDesignBody.safeParse(req.body);
+  if (!parsed.success) {
+    req.log.warn({ validationIssues: parsed.error.issues }, "Invalid storefront-design update payload");
+    res.status(400).json({ error: parsed.error.message });
+    return;
+  }
+
+  const [store] = await db
+    .update(storesTable)
+    .set(parsed.data)
+    .where(eq(storesTable.id, storeId))
+    .returning();
+  if (!store) { res.status(404).json({ error: "Store not found" }); return; }
+  res.json(UpdateAdminStorefrontDesignResponse.parse(storefrontDesignResponse(store)));
 });
 
 // ── B2B Accounts ──────────────────────────────────────────────────

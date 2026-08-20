@@ -118,6 +118,103 @@ export interface DiscoveryTilesUpdate {
   discoveryTiles: StorefrontDiscoveryTile[];
 }
 
+export interface HomepageSections {
+  showDiscovery: boolean;
+  showValues: boolean;
+  showFeatured: boolean;
+}
+
+export type StorefrontDesignHomepageLayout = typeof StorefrontDesignHomepageLayout[keyof typeof StorefrontDesignHomepageLayout];
+
+
+export const StorefrontDesignHomepageLayout = {
+  editorial: 'editorial',
+  lookbook: 'lookbook',
+  collection_grid: 'collection_grid',
+} as const;
+
+export interface StorefrontDesign {
+  homepageLayout: StorefrontDesignHomepageLayout;
+  homepageSections: HomepageSections;
+  /** @nullable */
+  heroEyebrow?: string | null;
+  /** @nullable */
+  heroTitle?: string | null;
+  /** @nullable */
+  heroSubtitle?: string | null;
+  /** @nullable */
+  heroImageUrl?: string | null;
+  /** @nullable */
+  heroCtaLabel?: string | null;
+  /** @nullable */
+  shopNavigationLabel?: string | null;
+  /** @nullable */
+  featuredSectionTitle?: string | null;
+  /** @nullable */
+  featuredSectionDescription?: string | null;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  featuredProductLimit: number;
+}
+
+export type StorefrontDesignUpdateHomepageLayout = typeof StorefrontDesignUpdateHomepageLayout[keyof typeof StorefrontDesignUpdateHomepageLayout];
+
+
+export const StorefrontDesignUpdateHomepageLayout = {
+  editorial: 'editorial',
+  lookbook: 'lookbook',
+  collection_grid: 'collection_grid',
+} as const;
+
+export interface StorefrontDesignUpdate {
+  homepageLayout?: StorefrontDesignUpdateHomepageLayout;
+  homepageSections?: HomepageSections;
+  /**
+     * @maxLength 60
+     * @nullable
+     */
+  heroEyebrow?: string | null;
+  /**
+     * @maxLength 120
+     * @nullable
+     */
+  heroTitle?: string | null;
+  /**
+     * @maxLength 280
+     * @nullable
+     */
+  heroSubtitle?: string | null;
+  /** @nullable */
+  heroImageUrl?: string | null;
+  /**
+     * @maxLength 40
+     * @nullable
+     */
+  heroCtaLabel?: string | null;
+  /**
+     * @maxLength 30
+     * @nullable
+     */
+  shopNavigationLabel?: string | null;
+  /**
+     * @maxLength 80
+     * @nullable
+     */
+  featuredSectionTitle?: string | null;
+  /**
+     * @maxLength 220
+     * @nullable
+     */
+  featuredSectionDescription?: string | null;
+  /**
+     * @minimum 1
+     * @maximum 12
+     */
+  featuredProductLimit?: number;
+}
+
 export type StoreFontFamily = typeof StoreFontFamily[keyof typeof StoreFontFamily];
 
 
@@ -126,6 +223,15 @@ export const StoreFontFamily = {
   Playfair_Display: 'Playfair Display',
   Outfit: 'Outfit',
   Space_Grotesk: 'Space Grotesk',
+} as const;
+
+export type StoreHomepageLayout = typeof StoreHomepageLayout[keyof typeof StoreHomepageLayout];
+
+
+export const StoreHomepageLayout = {
+  editorial: 'editorial',
+  lookbook: 'lookbook',
+  collection_grid: 'collection_grid',
 } as const;
 
 export type StoreButtonStyle = typeof StoreButtonStyle[keyof typeof StoreButtonStyle];
@@ -175,6 +281,8 @@ export interface Store {
      * @nullable
      */
   discoveryTiles?: StorefrontDiscoveryTile[] | null;
+  homepageLayout?: StoreHomepageLayout;
+  homepageSections?: HomepageSections;
   buttonStyle?: StoreButtonStyle;
   isActive: boolean;
   demoMode: boolean;
@@ -204,6 +312,15 @@ export const StoreInputFontFamily = {
   Playfair_Display: 'Playfair Display',
   Outfit: 'Outfit',
   Space_Grotesk: 'Space Grotesk',
+} as const;
+
+export type StoreInputHomepageLayout = typeof StoreInputHomepageLayout[keyof typeof StoreInputHomepageLayout];
+
+
+export const StoreInputHomepageLayout = {
+  editorial: 'editorial',
+  lookbook: 'lookbook',
+  collection_grid: 'collection_grid',
 } as const;
 
 export type StoreInputButtonStyle = typeof StoreInputButtonStyle[keyof typeof StoreInputButtonStyle];
@@ -238,6 +355,8 @@ export interface StoreInput {
   featuredProductLimit?: number;
   /** @maxItems 12 */
   discoveryTiles?: StorefrontDiscoveryTile[];
+  homepageLayout?: StoreInputHomepageLayout;
+  homepageSections?: HomepageSections;
   buttonStyle?: StoreInputButtonStyle;
   demoMode?: boolean;
   /**
@@ -258,6 +377,15 @@ export const StoreUpdateFontFamily = {
   Playfair_Display: 'Playfair Display',
   Outfit: 'Outfit',
   Space_Grotesk: 'Space Grotesk',
+} as const;
+
+export type StoreUpdateHomepageLayout = typeof StoreUpdateHomepageLayout[keyof typeof StoreUpdateHomepageLayout];
+
+
+export const StoreUpdateHomepageLayout = {
+  editorial: 'editorial',
+  lookbook: 'lookbook',
+  collection_grid: 'collection_grid',
 } as const;
 
 export type StoreUpdateButtonStyle = typeof StoreUpdateButtonStyle[keyof typeof StoreUpdateButtonStyle];
@@ -291,6 +419,8 @@ export interface StoreUpdate {
   featuredProductLimit?: number;
   /** @maxItems 12 */
   discoveryTiles?: StorefrontDiscoveryTile[];
+  homepageLayout?: StoreUpdateHomepageLayout;
+  homepageSections?: HomepageSections;
   buttonStyle?: StoreUpdateButtonStyle;
   isActive?: boolean;
   demoMode?: boolean;
@@ -303,6 +433,15 @@ export interface StoreUpdate {
   shopifyStorefrontToken?: string;
   shopifyAdminKey?: string;
 }
+
+export type StorefrontConfigHomepageLayout = typeof StorefrontConfigHomepageLayout[keyof typeof StorefrontConfigHomepageLayout];
+
+
+export const StorefrontConfigHomepageLayout = {
+  editorial: 'editorial',
+  lookbook: 'lookbook',
+  collection_grid: 'collection_grid',
+} as const;
 
 export type StorefrontConfigButtonStyle = typeof StorefrontConfigButtonStyle[keyof typeof StorefrontConfigButtonStyle];
 
@@ -347,6 +486,8 @@ export interface StorefrontConfig {
      * @nullable
      */
   discoveryTiles?: StorefrontDiscoveryTile[] | null;
+  homepageLayout?: StorefrontConfigHomepageLayout;
+  homepageSections?: HomepageSections;
   buttonStyle?: StorefrontConfigButtonStyle;
 }
 
