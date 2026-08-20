@@ -51,16 +51,20 @@ to individual storefronts.  Without it, visiting your platform URL causes the
 SPA to enter "custom domain mode" and show "Store not found" instead of the
 admin login page.
 
-### 3. Build images and start services
+### 3. Build images and start the database
 
 ```bash
-docker compose up -d --build
+docker compose build
+docker compose up -d postgres
 ```
 
 First build takes 3–5 minutes (downloads base images, installs pnpm deps, compiles bundles).
 Subsequent builds are much faster thanks to Docker layer caching.
 
-Three containers start:
+Only PostgreSQL starts at this point so migrations and the first administrator can be
+created before the API accepts requests. The full platform starts in step 7.
+
+The complete stack contains:
 | Container | Role |
 |---|---|
 | `postgres` | PostgreSQL 17 database with a named volume for persistence |
@@ -76,11 +80,41 @@ docker compose --profile tools run --rm migrate
 ```
 
 The `migrate` service uses a tracked SQL runner (`lib/db/migrate.mjs`) that records
-each applied file in a `_migrations` table.  New installations run all files; upgrades
-run only the files added since the last deploy.  Always run this **before** restarting
-the API containers so the schema is ready when the new code starts.
+each applied file in a `_migrations` table. New installations run all files; upgrades
+run only the files added since the last deploy. Always run this **before** starting or
+restarting the API containers so the schema is ready when the new code starts.
 
-### 5. (Optional) Load demo data
+### 5. Create the first super-admin (clean installation)
+
+For a blank production installation, create the first administrator **once** after
+migrations. This creates one password-hashed super-admin account and no stores,
+products, Shopify connections, or demo accounts.
+
+Enter the credentials only in your current shell session — do not add them to
+`.env` or commit them to Git:
+
+```bash
+read -r -p "Initial super-admin email: " BOOTSTRAP_ADMIN_EMAIL
+export BOOTSTRAP_ADMIN_EMAIL
+read -r -s -p "Initial super-admin password (12+ characters): " BOOTSTRAP_ADMIN_PASSWORD
+printf '\n'
+export BOOTSTRAP_ADMIN_PASSWORD
+
+docker compose --profile tools run --rm bootstrap-admin
+
+unset BOOTSTRAP_ADMIN_EMAIL BOOTSTRAP_ADMIN_PASSWORD
+```
+
+The command refuses to make any changes when a super-admin already exists, so it
+cannot reset or replace an administrator.
+
+### 6. Start the platform
+
+```bash
+docker compose up -d
+```
+
+### 7. (Optional, demo environments only) Load demo data
 
 Creates 4 demo brands, products, and sample accounts — safe to skip for a clean production install:
 
@@ -96,15 +130,22 @@ docker compose --profile tools run --rm seed
 | B2B Buyer | `buyer@sportsgear-wholesale.com` | `buyer1234` |
 
 > ⚠️ Change all demo passwords immediately after seeding.
+>
+> Do not run the demo seed after a clean bootstrap on a production server. It adds
+> sample stores, products, buyers, and its own demo super-admin account.
 
-### 6. Verify
+### 8. Verify
 
 ```bash
 curl http://localhost/api/healthz
 # → {"status":"ok"}
 ```
 
-Open `http://your-server-ip` — you should see the Platform Storefronts landing page with all four brands.
+Before configuring TLS, open `http://<your-platform-host>/super-admin/login` and sign
+in with the initial administrator. After completing the HTTPS steps below, use
+`https://<your-platform-host>/super-admin/login` instead. For a clean installation,
+create your first store from the super-admin portal; the public storefront list remains
+empty until then.
 
 ---
 

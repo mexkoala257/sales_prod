@@ -2,7 +2,7 @@
 # Build context: workspace root (.)
 #
 # Stages:
-#   builder  — installs deps, compiles API bundle + seed script, runs pnpm deploy
+#   builder  — installs deps, compiles API bundle + one-time setup tools, runs pnpm deploy
 #   migrate  — has pnpm + source for running drizzle-kit push (one-shot)
 #   runtime  — slim production image with only dist/ and flat node_modules
 
@@ -28,9 +28,10 @@ COPY tsconfig.base.json ./
 COPY lib/               lib/
 COPY artifacts/api-server/ artifacts/api-server/
 
-# Build the main API bundle and the seed script
+# Build the main API bundle and optional one-time tools
 RUN cd artifacts/api-server && node build.mjs
 RUN cd artifacts/api-server && node build-seed.mjs
+RUN cd artifacts/api-server && node build-bootstrap-admin.mjs
 
 # Create a self-contained production deployment with flat (non-symlinked) node_modules.
 # --legacy bypasses pnpm 10's ERR_PNPM_DEPLOY_NONINJECTED_WORKSPACE requirement.

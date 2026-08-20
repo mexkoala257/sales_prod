@@ -3,10 +3,12 @@ version: "3.9"
 # ── Multi-Brand Platform — Docker Compose ─────────────────────────────────
 #
 # Quick start:
-#   cp .env.example .env                              # fill in your secrets
-#   docker compose up -d --build                      # build and start
-#   docker compose --profile tools run --rm migrate   # push DB schema (first run)
-#   docker compose --profile tools run --rm seed      # optional: load demo data
+#   cp .env.example .env                                     # fill in your secrets
+#   docker compose build && docker compose up -d postgres    # build and start only Postgres
+#   docker compose --profile tools run --rm migrate          # apply DB migrations
+#   docker compose --profile tools run --rm bootstrap-admin  # one-time, clean install
+#   docker compose up -d                                     # start API and web
+#   docker compose --profile tools run --rm seed             # optional: demo data only
 #
 # Update after a git pull:
 #   docker compose build && docker compose up -d
@@ -91,6 +93,26 @@ services:
       NODE_ENV:      production
       DATABASE_URL:  postgres://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-platform}
       SESSION_SECRET: ${SESSION_SECRET:?SESSION_SECRET is required — set it in .env}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    profiles: [tools]
+
+  # ── First administrator — create only on a clean database ───────────────────
+  bootstrap-admin:
+    build:
+      context: .
+      dockerfile: artifacts/api-server/Dockerfile
+      target: runtime
+    command: ["node", "--enable-source-maps", "dist/bootstrap-admin.mjs"]
+    environment:
+      NODE_ENV:                  production
+      DATABASE_URL:              postgres://${POSTGRES_USER:-platform}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB:-platform}
+      # These intentionally default to empty so normal `docker compose up`
+      # never requires bootstrap-only credentials. The CLI validates both values
+      # and exits safely when this one-time tool is invoked without them.
+      BOOTSTRAP_ADMIN_EMAIL:     ${BOOTSTRAP_ADMIN_EMAIL:-}
+      BOOTSTRAP_ADMIN_PASSWORD:  ${BOOTSTRAP_ADMIN_PASSWORD:-}
     depends_on:
       postgres:
         condition: service_healthy
