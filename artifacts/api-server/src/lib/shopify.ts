@@ -32,7 +32,7 @@ import { logger } from "./logger";
 // paths are migrated. Product and collection writes use the current Admin
 // GraphQL API below, because Shopify no longer supports REST product writes for
 // newly created apps.
-const API_VERSION = "2024-10";
+const API_VERSION = "2026-07";
 const ADMIN_GRAPHQL_VERSION = "2026-01";
 
 // ── Config ────────────────────────────────────────────────────────────────
