@@ -1139,6 +1139,17 @@ export async function createShopifyCheckout(
   if (userErrors.length) throw new Error(`Shopify cart error: ${userErrors[0].message}`);
   const url = data.data?.cartCreate?.cart?.checkoutUrl;
   if (!url) throw new Error("Shopify did not return a checkout URL.");
+
+  // Append the return URL directly to the checkout URL. Shopify's checkout
+  // server reads the `return_to` query parameter and uses it for the
+  // "Return to store" / "Continue shopping" link. This is more reliable than
+  // the `_return_to` cart attribute, which is a theme-level convention that
+  // Shopify's server-generated checkoutUrl does not automatically respect.
+  if (returnUrl) {
+    const parsed = new URL(url);
+    parsed.searchParams.set("return_to", returnUrl);
+    return parsed.toString();
+  }
   return url;
 }
 
