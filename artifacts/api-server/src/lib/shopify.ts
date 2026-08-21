@@ -1072,7 +1072,12 @@ export interface CheckoutLineItem {
   quantity: number;
 }
 
-export async function createShopifyCheckout(items: CheckoutLineItem[], platformStoreId: number): Promise<string> {
+export async function createShopifyCheckout(
+  items: CheckoutLineItem[],
+  platformStoreId: number,
+  /** URL Shopify should link back to from its checkout (e.g. the branded storefront home). */
+  returnUrl?: string,
+): Promise<string> {
   const config = await getShopifyConfig();
   if (!config || !config.storefrontToken) {
     throw new Error("Shopify Storefront API is not configured.");
@@ -1091,6 +1096,17 @@ export async function createShopifyCheckout(items: CheckoutLineItem[], platformS
       }
     }`;
 
+  // Build cart attributes. `platform_store_id` is propagated to the order's
+  // note_attributes and used by the orders/create webhook for store routing.
+  // `_return_to` is a Shopify-recognised attribute that sets the
+  // "Return to store" / "Continue shopping" link inside Shopify's checkout UI.
+  const attributes: Array<{ key: string; value: string }> = [
+    { key: "platform_store_id", value: String(platformStoreId) },
+  ];
+  if (returnUrl) {
+    attributes.push({ key: "_return_to", value: returnUrl });
+  }
+
   const res = await fetch(`https://${config.storeUrl}/api/${API_VERSION}/graphql.json`, {
     method: "POST",
     headers: {
@@ -1102,9 +1118,7 @@ export async function createShopifyCheckout(items: CheckoutLineItem[], platformS
       variables: {
         input: {
           lines,
-          // Propagated by Shopify to the order's note_attributes — this is the
-          // authoritative store-routing key read back in the orders/create webhook.
-          attributes: [{ key: "platform_store_id", value: String(platformStoreId) }],
+          attributes,
         },
       },
     }),

@@ -140,8 +140,15 @@ router.post("/storefront/:storeSlug/shopify-checkout", async (req, res): Promise
     lineItems.push({ shopifyVariantId, quantity });
   }
 
+  // Build the "Return to store" URL: prefer the store's custom domain, fall
+  // back to the request origin so the link always goes back to the branded
+  // storefront rather than the raw .myshopify.com URL.
+  const returnUrl = store.customDomain
+    ? `https://${store.customDomain}`
+    : `${req.headers["x-forwarded-proto"] ?? "https"}://${req.headers["x-forwarded-host"] ?? req.headers.host}`;
+
   try {
-    const checkoutUrl = await createShopifyCheckout(lineItems, store.id);
+    const checkoutUrl = await createShopifyCheckout(lineItems, store.id, returnUrl);
     res.json({ checkoutUrl });
   } catch (err) {
     const message = err instanceof Error ? err.message : String(err);
