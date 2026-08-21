@@ -4,3 +4,4 @@
 - [OpenAPI integer codegen](openapi-integer-codegen.md) — model integer-like API fields with number + multipleOf to avoid incompatible generated Zod output
 - [Development schema drift safety](development-schema-drift.md) — never force Drizzle push when it proposes deleting legacy migration records; use additive changes instead
 - [Bootstrap tool credentials in Compose](bootstrap-compose-tool-credentials.md) — tool-only variables must not block normal Compose startup; validate them inside the tool
+- [Traefik + Nginx proxy headers](traefik-nginx-proxy-headers.md) — never use $scheme behind Traefik; always pass $http_x_forwarded_proto or OAuth callbacks silently become http://
